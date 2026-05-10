@@ -74,18 +74,23 @@ export function useSchedules() {
   }, [fetchSchedules])
 
   useEffect(() => {
-    fetchSchedules()
-
+    console.log('[useSchedules] 开始连接 Supabase...')
+    
     const channel = supabase
       .channel('schedules_changes')
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'schedules'
-      }, () => {
+      }, (payload) => {
+        console.log('[useSchedules] 数据库变更:', payload)
         fetchSchedules()
       })
-      .subscribe()
+      .subscribe((status) => {
+        console.log('[useSchedules] 订阅状态:', status)
+      })
+
+    fetchSchedules()
 
     return () => {
       supabase.removeChannel(channel)

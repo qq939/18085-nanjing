@@ -21,8 +21,14 @@ pkill -9 -f "node.*server.js" 2>/dev/null || true
 pkill -9 -f "vite" 2>/dev/null || true
 sleep 1
 
+# 修复 npm 缓存权限
+log "修复 npm 缓存权限..."
+sudo mkdir -p /home/agent/.npm
+sudo chown -R 501:20 /home/agent/.npm
+sudo chmod -R 755 /home/agent/.npm
+
 log "安装依赖..."
-npm install
+npm install --legacy-peer-deps
 
 log "启动 Vite 开发服务器..."
 nohup npm start > logs/run.log 2>&1 &
