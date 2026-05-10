@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head><title>API Test</title></head>
+<body>
+<h1>测试页面</h1>
+<div id="result">加载中...</div>
+<script>
+async function test() {
+    try {
+        const response = await fetch('/api/schedules');
+        const result = await response.json();
+        document.getElementById('result').innerHTML =
+            '成功! 日程数量: ' + result.data.length +
+            '<br>第一条: ' + (result.data[0]?.title || '无');
+        console.log('测试结果:', result);
+    } catch(e) {
+        document.getElementById('result').innerHTML = '错误: ' + e.message;
+        console.error('错误:', e);
+    }
+}
+test();
+</script>
+</body>
+</html>

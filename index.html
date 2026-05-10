@@ -7,7 +7,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --bg-cream: #FDF8F3;
@@ -39,6 +38,7 @@
             background: var(--bg-cream);
             min-height: 100vh;
             color: var(--text-dark);
+            position: relative;
         }
 
         .container {
@@ -68,8 +68,13 @@
 
         .main-grid {
             display: grid;
-            grid-template-columns: 400px 1fr;
-            gap: 2rem;
+            grid-template-columns: 350px 1fr 380px;
+            gap: 1.5rem;
+            height: calc(100vh - 150px);
+        }
+
+        .main-grid > .card {
+            overflow-y: auto;
         }
 
         .card {
@@ -173,6 +178,20 @@
         .btn-sm {
             padding: 0.5rem 1rem;
             font-size: 0.875rem;
+        }
+
+        .schedule-section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .schedule-section .stats {
+            flex-shrink: 0;
+        }
+
+        .schedule-section .schedule-list {
+            flex: 1;
+            overflow-y: auto;
         }
 
         .schedule-section h2 {
@@ -392,6 +411,64 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* 旅行规划区域样式 */
+        .travel-section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .travel-section h2 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+
+        .travel-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            color: var(--text-gray);
+            padding: 2rem;
+        }
+
+        .travel-loading .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--primary);
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .travel-refresh {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .travel-refresh:hover {
+            background: var(--primary-dark);
+        }
     </style>
 </head>
 <body>
@@ -418,15 +495,13 @@
                         <textarea id="description" rows="3" placeholder="添加描述..."></textarea>
                     </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="startTime">开始时间 *</label>
-                            <input type="datetime-local" id="startTime" required />
-                        </div>
-                        <div class="form-group">
-                            <label for="endTime">结束时间 *</label>
-                            <input type="datetime-local" id="endTime" required />
-                        </div>
+                    <div class="form-group">
+                        <label for="startTime">开始时间 *</label>
+                        <input type="datetime-local" id="startTime" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="endTime">结束时间 *</label>
+                        <input type="datetime-local" id="endTime" required />
                     </div>
 
                     <div id="conflictWarning" class="conflict-warning">
@@ -461,6 +536,15 @@
                     </div>
                 </div>
             </div>
+
+            <!-- 旅行规划侧栏 -->
+            <div class="card travel-section">
+                <h2>✈️ 旅行规划</h2>
+                <div id="travelStatus" style="text-align: center; color: var(--text-gray); padding: 20px;">
+                    加载中...
+                </div>
+                <iframe id="travelFrame" src="sidebar.html" style="width: 100%; height: calc(100% - 50px); border: none; display: none;"></iframe>
+            </div>
         </div>
     </div>
 
@@ -480,12 +564,9 @@
     <div id="toast" class="toast"></div>
 
     <script>
-        // Supabase 配置（从配置文件读取）
-        const SUPABASE_URL = 'https://uacwkmdyekxyqtopdele.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhY3drbWR5ZWt4eXF0b3BkZWxlIiwicmlkIjoiNTc4OTkzNTk3MDM0ODU4NzkzNDgiLCJpYXQiOjE3NDg2ODQ2MDAsImV4cCI6MjA2NDI2MDYwMH0.EU5UJ8x1nNGni4T4wP1Y7Y8hPmY9R5vL6kGJ3xC_p9c';
-        const SUPABASE_TABLE = 'schedules';
+        // API 配置（直连 Supabase PostgreSQL）
+        const API_BASE = '';
 
-        let supabase = null;
         let schedules = [];
         let deleteTargetId = null;
 
@@ -504,27 +585,25 @@
 
         // 初始化
         document.addEventListener('DOMContentLoaded', () => {
-            initSupabase(SUPABASE_URL, SUPABASE_KEY);
+            fetchSchedules();
             initForm();
         });
 
-        // 加载配置（兼容旧代码）
-        function loadConfig() {
-            // 使用内置配置
-            initSupabase(SUPABASE_URL, SUPABASE_KEY);
-        }
-
-        // 保存配置（兼容旧代码）
-        function saveConfig() {
-            // 使用内置配置，无需保存
-            initSupabase(SUPABASE_URL, SUPABASE_KEY);
-            showToast('已连接Supabase数据库', 'success');
-        }
-
-        // 初始化 Supabase
-        function initSupabase(url, key) {
-            supabase = window.supabase.createClient(url, key);
-            fetchSchedules();
+        // API 请求封装
+        async function apiRequest(method, path, data = null) {
+            const options = {
+                method,
+                headers: { 'Content-Type': 'application/json' }
+            };
+            if (data) {
+                options.body = JSON.stringify(data);
+            }
+            const response = await fetch(API_BASE + path, options);
+            const result = await response.json();
+            if (!response.ok) {
+                throw new Error(result.error || '请求失败');
+            }
+            return result;
         }
 
         // 初始化表单
@@ -569,7 +648,7 @@
             const endTime = document.getElementById('endTime').value;
             const editId = document.getElementById('editId').value;
 
-            if (!startTime || !endTime || !supabase) return;
+            if (!startTime || !endTime) return;
 
             const start = parseDateTimeLocal(startTime);
             const end = parseDateTimeLocal(endTime);
@@ -636,7 +715,7 @@
                 return;
             }
 
-            // 检查冲突
+            // 检查冲突（前端检查）
             const conflicts = schedules.filter(s => {
                 if (editId && s.id === editId) return false;
                 const sStart = new Date(s.start_time);
@@ -659,20 +738,11 @@
             try {
                 if (editId) {
                     // 更新
-                    const { error } = await supabase
-                        .from('schedules')
-                        .update({ ...data, updated_at: new Date().toISOString() })
-                        .eq('id', editId);
-
-                    if (error) throw error;
+                    await apiRequest('PUT', `/api/schedules/${editId}`, data);
                     showToast('日程已更新', 'success');
                 } else {
                     // 添加
-                    const { error } = await supabase
-                        .from('schedules')
-                        .insert([data]);
-
-                    if (error) throw error;
+                    await apiRequest('POST', '/api/schedules', data);
                     showToast('日程已添加', 'success');
                 }
 
@@ -708,17 +778,9 @@
 
         // 获取日程列表
         async function fetchSchedules() {
-            if (!supabase) return;
-
             try {
-                const { data, error } = await supabase
-                    .from('schedules')
-                    .select('*')
-                    .order('start_time', { ascending: true });
-
-                if (error) throw error;
-
-                schedules = data || [];
+                const result = await apiRequest('GET', '/api/schedules');
+                schedules = result.data || [];
                 renderSchedules();
                 updateStats();
             } catch (error) {
@@ -827,16 +889,10 @@
 
         // 确认删除
         document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
-            if (!deleteTargetId || !supabase) return;
+            if (!deleteTargetId) return;
 
             try {
-                const { error } = await supabase
-                    .from('schedules')
-                    .delete()
-                    .eq('id', deleteTargetId);
-
-                if (error) throw error;
-
+                await apiRequest('DELETE', `/api/schedules/${deleteTargetId}`);
                 showToast('日程已删除', 'success');
                 closeDeleteModal();
                 fetchSchedules();
@@ -863,6 +919,55 @@
             div.textContent = text;
             return div.innerHTML;
         }
-    </script>
-</body>
-</html>
+
+        // 旅行规划相关功能
+        function initTravelSection() {
+            const travelStatus = document.getElementById('travelStatus');
+            const travelFrame = document.getElementById('travelFrame');
+
+            // 检查 sidebar.html 是否存在
+            fetch('sidebar.html')
+                .then(res => {
+                    if (res.ok) {
+                        travelStatus.style.display = 'none';
+                        travelFrame.style.display = 'block';
+                    } else {
+                        travelStatus.innerHTML = '暂无旅行规划<br><small>添加包含地点的日程后自动生成</small>';
+                    }
+                })
+                .catch(() => {
+                    travelStatus.innerHTML = '暂无旅行规划<br><small>添加包含地点的日程后自动生成</small>';
+                });
+
+            // 每半小时检查一次（30 * 60 * 1000 ms）
+            setInterval(updateTravelPlans, 30 * 60 * 1000);
+        }
+
+        // 更新旅行规划
+        async function updateTravelPlans() {
+            try {
+                const statusEl = document.getElementById('travelStatus');
+                statusEl.innerHTML = '<div class="travel-loading"><div class="spinner"></div>正在生成旅行规划...</div>';
+                statusEl.style.display = 'block';
+                document.getElementById('travelFrame').style.display = 'none';
+
+                // 调用 API 触发旅行规划生成
+                const result = await apiRequest('POST', '/api/travel/generate', {
+                    schedules: schedules
+                });
+
+                if (result.success) {
+                    statusEl.style.display = 'none';
+                    document.getElementById('travelFrame').style.display = 'block';
+                    // 刷新 iframe
+                    document.getElementById('travelFrame').src = 'sidebar.html?t=' + Date.now();
+                }
+            } catch (error) {
+                console.error('更新旅行规划失败:', error);
+            }
+        }
+
+        // 初始化旅行规划区域
+        document.addEventListener('DOMContentLoaded', () => {
+            initTravelSection();
+        });

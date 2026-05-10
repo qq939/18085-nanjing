@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简化测试</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .schedule-item { padding: 10px; border: 1px solid #ccc; margin: 5px 0; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>简化日程测试</h1>
+    <div id="scheduleList">加载中...</div>
+    <script>
+        async function test() {
+            const list = document.getElementById('scheduleList');
+            try {
+                const res = await fetch('/api/schedules');
+                const data = await res.json();
+                list.innerHTML = '<p>API返回成功，数据量: ' + data.data.length + '</p>';
+                data.data.forEach(s => {
+                    list.innerHTML += '<div class="schedule-item">' + s.title + '</div>';
+                });
+            } catch(e) {
+                list.innerHTML = '<p class="error">错误: ' + e.message + '</p>';
+            }
+        }
+        test();
+    </script>
+</body>
+</html>

@@ -65,29 +65,40 @@ pkill -f "node server.js"
 
 ## Web App 功能模块
 
-### 日程管理 (index.html)
+### 日程管理 (index.html) - 三栏布局
+
+**布局结构**:
+- 第一栏(350px): 添加/编辑日程表单
+- 第二栏(1fr): 日程列表（按开始时间排序）
+- 第三栏(380px): 旅行规划（嵌套 sidebar.html）
 
 **功能**:
 - 事项名称、描述管理
-- 开始时间、结束时间（datetime-local 选择器）
+- 开始时间、结束时间（datetime-local 选择器，两行布局）
 - 增删改查日程
 - **时间段冲突检测** - 实时检查并阻止冲突日程
-- Supabase 数据库持久化
-- 时间自动按开始时间排序
+- Supabase PostgreSQL 直连
+- **每30分钟自动生成旅行规划** - 调用 Claude CLI 生成小红书风格攻略
 
 **技术栈**:
 - HTML5 + CSS3 + Vanilla JavaScript
-- Supabase JS SDK
+- Node.js (pg) 直连 PostgreSQL
+- Claude CLI 调用生成旅行规划
 - 字体: Noto Sans SC
 - 颜色: 珊瑚粉 #FF6B6B + 蜜桃色 #FFB88C + 橙色 #FF9F43
 
-**数据库配置 (Supabase)**:
-```javascript
-// 连接信息
-SUPABASE_URL = 'https://uacwkmdyekxyqtopdele.supabase.co'
-SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+**API 端点**:
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | /api/schedules | 获取所有日程 |
+| POST | /api/schedules | 创建日程（含冲突检测） |
+| PUT | /api/schedules/:id | 更新日程 |
+| DELETE | /api/schedules/:id | 删除日程 |
+| POST | /api/travel/generate | 生成旅行规划 |
 
-// 连接池
+**数据库配置 (Supabase 直连)**:
+```javascript
+// 连接池（推荐）
 postgresql://postgres.uacwkmdyekxyqtopdele:Black_supabase00@aws-1-ap-northeast-2.pooler.supabase.com:5432/postgres
 ```
 
@@ -101,6 +112,20 @@ postgresql://postgres.uacwkmdyekxyqtopdele:Black_supabase00@aws-1-ap-northeast-2
 - created_at / updated_at (时间戳)
 - CHECK约束确保结束时间 > 开始时间
 ```
+
+### 旅行规划 (sidebar.html)
+
+**功能**:
+- 根据数据库日程自动生成小红书风格旅行攻略
+- 包含交通建议、餐饮推荐、住宿建议、景点攻略
+- 每30分钟自动刷新（如有日程变化）
+- 格式适配第三栏宽度（380px）
+
+**生成逻辑**:
+- 前端每30分钟调用 `/api/travel/generate`
+- API 将日程数据写入 `travel_input.json`
+- 调用 Claude CLI 生成 `sidebar.html`
+- 第三栏 iframe 嵌套显示
 
 ## 启动脚本特性
 
@@ -152,11 +177,20 @@ npx playwright test
 ## Git 提交历史
 
 ```
+f8a9c3d - 更新三栏布局和旅行规划功能
 e856601 - 修复启动脚本并完善项目文档
 a67cb16 - 完善项目文档并添加多个Web App页面
 6327a64 - 添加大同-太原-南京旅行攻略 HTML5 页面
 3be38d6 - 初始化 Web App 8082 项目环境
 ```
+
+## 最后3轮对话总结
+
+| 轮次 | 时间 | 用户要求 | 产出 |
+|------|------|----------|------|
+| 第1轮 | 23:02:58 | 三栏布局，第三栏用Claude生成旅行规划sidebar.html | index.html (三栏) + sidebar.html + server.js API |
+| 第2轮 | 23:12:17 | 数据库有数据但第二栏空着；时间放两行 | 修复布局，时间输入改为两行 |
+| 第3轮 | 23:39:28 | 完整开发流程检查 | 整理日志、更新README/SKILL |
 
 ## 主人联系方式
 

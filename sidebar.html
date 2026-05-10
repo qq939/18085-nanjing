@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>旅行规划</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #fdf6f3 0%, #fff9f5 100%);
+            padding: 16px;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #ff6b6b;
+        }
+        .header h1 {
+            font-size: 18px;
+            color: #ff6b6b;
+            margin-bottom: 4px;
+        }
+        .header p {
+            font-size: 12px;
+            color: #888;
+        }
+        .tips {
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+        .tips h2 {
+            font-size: 14px;
+            color: #ff6b6b;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .tip-item {
+            background: #fff5f5;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 3px solid #ff6b6b;
+        }
+        .tip-item:last-child {
+            margin-bottom: 0;
+        }
+        .schedule-summary {
+            background: linear-gradient(135deg, #ff6b6b, #ff9f43);
+            color: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .schedule-summary h2 {
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        .schedule-item {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 10px;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            font-size: 12px;
+        }
+        .schedule-item strong {
+            display: block;
+            margin-bottom: 2px;
+        }
+        .notice {
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            border: 2px dashed #ddd;
+        }
+        .notice p {
+            color: #888;
+            font-size: 13px;
+        }
+        .notice .icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+        .auto-update {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: #ff6b6b;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            box-shadow: 0 2px 8px rgba(255,107,107,0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>✈️ 旅行规划助手</h1>
+        <p>根据你的日程自动生成贴心攻略</p>
+    </div>
+
+    <div class="schedule-summary">
+        <h2>📅 即将到来的行程</h2>
+        <div id="schedules">
+            <div class="schedule-item">
+                <strong>暂无日程</strong>
+                <span>添加包含地点的日程后自动生成攻略</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="tips">
+        <h2>💡 使用提示</h2>
+        <div class="tip-item">
+            <strong>📝 添加地点</strong><br>
+            在日程描述中输入地点名称，如"北京天安门"
+        </div>
+        <div class="tip-item">
+            <strong>🕐 自动更新</strong><br>
+            每30分钟自动检查并生成最新攻略
+        </div>
+        <div class="tip-item">
+            <strong>🚗 交通建议</strong><br>
+            根据行程安排推荐最优路线和出行方式
+        </div>
+        <div class="tip-item">
+            <strong>🍜 餐饮推荐</strong><br>
+            包含目的地附近的热门餐厅和小吃
+        </div>
+    </div>
+
+    <div class="notice">
+        <div class="icon">🌟</div>
+        <p>添加旅行日程，开启智能规划之旅</p>
+    </div>
+
+    <div class="auto-update">🔄 每30分钟自动更新</div>
+
+    <script>
+        // 从父页面获取日程数据
+        try {
+            const schedules = window.parent.schedules || [];
+            if (schedules.length > 0) {
+                const container = document.getElementById('schedules');
+                container.innerHTML = schedules.slice(0, 5).map(s => {
+                    const start = new Date(s.start_time);
+                    const timeStr = `${start.getMonth()+1}/${start.getDate()} ${start.getHours()}:${String(start.getMinutes()).padStart(2,'0')}`;
+                    return `<div class="schedule-item">
+                        <strong>${s.title}</strong>
+                        <span>${timeStr} ${s.description || ''}</span>
+                    </div>`;
+                }).join('');
+                if (schedules.length > 5) {
+                    container.innerHTML += `<div style="text-align:center;color:rgba(255,255,255,0.8);font-size:11px;">还有 ${schedules.length - 5} 个行程...</div>`;
+                }
+            }
+        } catch (e) {
+            console.log('无法获取父页面数据');
+        }
+    </script>
+</body>
+</html>

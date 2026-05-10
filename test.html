@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Test</title>
+</head>
+<body>
+    <h1>Schedule List</h1>
+    <div id="list">Loading...</div>
+    <script>
+        fetch('/api/schedules')
+            .then(r => r.json())
+            .then(d => {
+                document.getElementById('list').innerHTML = 'Count: ' + d.data.length + '<br>' +
+                    d.data.map(s => s.title).join('<br>');
+            })
+            .catch(e => document.getElementById('list').innerHTML = 'Error: ' + e);
+    </script>
+</body>
+</html>

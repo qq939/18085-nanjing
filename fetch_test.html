@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Fetch Test</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        #result { padding: 20px; border: 2px solid #333; }
+        .item { padding: 8px; margin: 4px 0; background: #f0f0f0; border-radius: 4px; }
+        .error { background: #fee; color: red; }
+    </style>
+</head>
+<body>
+    <h1>Fetch Schedule Test</h1>
+    <button onclick="location.reload()">刷新</button>
+    <div id="result">Loading...</div>
+
+    <script>
+        const resultDiv = document.getElementById('result');
+        
+        async function load() {
+            resultDiv.innerHTML = '<p>开始加载...</p>';
+            
+            // Step 1: fetch API
+            resultDiv.innerHTML += '<p>Step 1: Fetch /api/schedules</p>';
+            const response = await fetch('/api/schedules');
+            resultDiv.innerHTML += '<p>Response status: ' + response.status + '</p>';
+            
+            // Step 2: parse JSON
+            resultDiv.innerHTML += '<p>Step 2: Parse JSON</p>';
+            const data = await response.json();
+            resultDiv.innerHTML += '<p>JSON parsed. data.length = ' + data.data.length + '</p>';
+            
+            // Step 3: render
+            resultDiv.innerHTML += '<p>Step 3: Render ' + data.data.length + ' items</p>';
+            resultDiv.innerHTML += data.data.map(item => 
+                '<div class="item"><strong>' + item.title + '</strong><br>' +
+                'Time: ' + item.start_time + ' ~ ' + item.end_time + '</div>'
+            ).join('');
+            
+            resultDiv.innerHTML += '<p style="color:green">Done!</p>';
+        }
+        
+        load().catch(err => {
+            resultDiv.innerHTML = '<div class="error">Error: ' + err.message + '</div>';
+            console.error(err);
+        });
+    </script>
+</body>
+</html>

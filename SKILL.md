@@ -16,11 +16,12 @@ Hermit-Claw 容器 (Agent Type: claude)
     │   ├── systemreadme.md - 系统惯例和规范
     │   └── TOOLS.md        - 工具配置
     ├── 启动与运行
-    │   ├── server.js       - Node.js 静态文件服务器 (端口8082)
+    │   ├── server.js       - Node.js API服务器 (端口8082)
     │   ├── user_start.sh   - 启动脚本（带进程清理和启动验证）
     │   └── logs/           - 日志目录
-    ├── Web Apps
-    │   └── index.html      - 日程管理主页 (868行)
+    ├── 前端页面
+    │   ├── index.html      - 日程管理主页面 (三栏布局)
+    │   └── sidebar.html    - 旅行规划内容（Claude生成）
     ├── 数据库配置
     │   └── supabase_schema.sql - 数据库表结构和函数
     └── 项目文档
@@ -34,62 +35,61 @@ Hermit-Claw 容器 (Agent Type: claude)
 
 | 时间 | 操作 | 产出 |
 |------|------|------|
-| 20:27:29 | 用户要求移除 CSV 和 AI 助手 | 保留日程管理功能 |
-| 20:29:27 | 开发日程管理应用 | index.html (868行) + supabase_schema.sql |
-| 20:44:25 | 修改 Supabase 配置 | 配置直接写入代码，无需前端配置 |
-| 20:53:25 | 初始化会话，检查项目环境 | 读取 systemreadme.md |
-| 20:54:50 | 再次初始化会话 | 完成文档更新 |
+| 21:25:54 | 修复启动脚本日志写入问题 | 改用fuser清理端口，nohup后台运行 |
+| 21:47:09 | 改用直连Supabase PostgreSQL | server.js添加API路由，pg直连 |
+| 23:02:58 | 三栏布局+Claude生成旅行规划 | index.html三栏+sidebar.html+API |
+| 23:12:17 | 修复第二栏空白+时间两行布局 | 修复fetch和CSS布局 |
+| 23:39:28 | 初始化会话检查 | 更新README/SKILL |
 
 ### 关键操作记录
 
-1. **移除不需要的功能**
+1. **移除 CSV 和 AI 助手**
    - 用户明确要求不要 CSV 和 AI 助手
    - 只保留日程管理功能
 
-2. **开发日程管理应用**
-   - 事项名称、描述管理
-   - 开始时间、结束时间选择
-   - 增删改查日程
-   - 时间段冲突检测
+2. **三栏布局开发**
+   - 第一栏(350px): 添加/编辑日程表单
+   - 第二栏(1fr): 日程列表
+   - 第三栏(380px): 旅行规划（嵌套sidebar.html）
 
-3. **Supabase 数据库集成**
-   - 连接信息: `https://uacwkmdyekxyqtopdele.supabase.co`
-   - Anon Key 内置在代码中
-   - 创建 schedules 表和相关函数
+3. **Supabase PostgreSQL 直连**
+   - 使用 `pg` 库直连连接池
+   - 连接: `postgresql://postgres.uacwkmdyekxyqtopdele:Black_supabase00@aws-1-ap-northeast-2.pooler.supabase.com:5432/postgres`
 
-4. **配置文件修改**
-   - 遵循 systemreadme.md 规范
-   - Supabase 配置直接写入 JavaScript
-   - 不在前端暴露配置
+4. **Claude CLI 生成旅行规划**
+   - 前端每30分钟调用 `/api/travel/generate`
+   - API 调用 Claude CLI 生成小红书风格攻略
+   - 写入 `sidebar.html` 供第三栏 iframe 嵌套
 
 ## 最后3轮对话总结
 
-### 第1轮: 移除 CSV 和 AI 助手 (20:27:29)
-- **用户要求**: 不要 csv 和 ai 助手，好好写日程管理
-- **任务**: 日程管理，事项，起始时间，结束时间，可以增减项目，可以选择和直接填写时间，时间段不能冲突，落表到 supabase
+### 第1轮: 三栏布局和旅行规划 (23:02:58)
+- **用户要求**: UI三栏分布，第三栏每30分钟根据数据库内容调用Claude CLI生成sidebar.html
 - **操作**:
-  - 移除 ai-assistant.html 和 csv.html
-  - 重写 index.html 为日程管理应用
-  - 创建 supabase_schema.sql 数据库表结构
+  - 重写 index.html 为三栏布局
+  - 添加 `/api/travel/generate` API 端点
+  - 创建 sidebar.html 基础模板
 - **产出**:
-  - index.html (868行) - 日程管理前端应用
-  - supabase_schema.sql - 数据库表结构
+  - index.html (三栏布局)
+  - sidebar.html (旅行规划)
+  - server.js 更新 (新增 API)
 
-### 第2轮: 修复 Supabase 配置 (20:44:25)
-- **用户要求**: 不要让我在前端配置 supabase，你自己看 systemreadme 去
+### 第2轮: 修复布局问题 (23:12:17)
+- **用户要求**: 数据库有数据但第二栏空着；时间放两行
 - **操作**:
-  - 移除前端 Supabase 配置输入框
-  - 直接将连接信息写入 JavaScript 代码
-  - URL: `https://uacwkmdyekxyqtopdele.supabase.co`
-  - Anon Key: 内置 JWT 令牌
-- **产出**: 配置已内置，应用启动时自动连接数据库
+  - 检查 fetch API 调用
+  - 修复 CSS 布局问题
+  - 时间输入改为两行布局
+- **产出**: 日程列表正常显示
 
-### 第3轮: 初始化会话 (20:53:25)
-- **任务**: 完整开发、测试、发现 bug、变更流程
+### 第3轮: 初始化会话检查 (23:39:28)
+- **用户要求**: 你认为你应该查找运行日志run.log，而不是让我找debug信息
+- **任务**: 完整开发流程检查
 - **操作**:
   - 检查启动脚本 user_start.sh
   - 读取 logs/agent_tui.log 整理内容
   - 更新 README.md 和 SKILL.md
+  - 执行 git commit
 - **产出**: 完整项目文档
 
 ## 技术栈总结

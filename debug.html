@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head><title>Debug Test</title></head>
+<body>
+<h1>Debug Test</h1>
+<div id="log"></div>
+<script>
+// 重写 console.log 来显示在页面上
+const logDiv = document.getElementById('log');
+const originalLog = console.log;
+console.log = function(...args) {
+    logDiv.innerHTML += '<p>[LOG] ' + args.join(' ') + '</p>';
+    originalLog.apply(console, args);
+};
+
+async function init() {
+    logDiv.innerHTML += '<p>开始初始化...</p>';
+
+    try {
+        logDiv.innerHTML += '<p>调用 fetchSchedules()...</p>';
+
+        const response = await fetch('/api/schedules');
+        logDiv.innerHTML += '<p>收到响应: ' + response.status + '</p>';
+
+        const result = await response.json();
+        logDiv.innerHTML += '<p>解析JSON成功</p>';
+        logDiv.innerHTML += '<p>日程数量: ' + result.data.length + '</p>';
+
+        const container = document.getElementById('scheduleList');
+        logDiv.innerHTML += '<p>container 元素存在: ' + (container !== null) + '</p>';
+
+        if (result.data.length > 0) {
+            container.innerHTML = result.data.map(s => {
+                return '<div class="schedule-item"><div class="schedule-title">' + s.title + '</div></div>';
+            }).join('');
+            logDiv.innerHTML += '<p>渲染完成!</p>';
+        } else {
+            container.innerHTML = '<div class="empty-state"><p>暂无日程</p></div>';
+            logDiv.innerHTML += '<p>显示暂无日程</p>';
+        }
+    } catch(e) {
+        logDiv.innerHTML += '<p style="color:red">错误: ' + e.message + '</p>';
+        console.error(e);
+    }
+}
+
+init();
+</script>
+</body>
+</html>
