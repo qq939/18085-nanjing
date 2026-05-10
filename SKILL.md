@@ -17,7 +17,7 @@ Hermit-Claw 容器 (Agent Type: claude)
     │   └── TOOLS.md        - 工具配置
     ├── 启动与运行
     │   ├── server.js       - Node.js 静态文件服务器 (端口8082)
-    │   ├── user_start.sh   - 启动脚本
+    │   ├── user_start.sh   - 启动脚本（带进程清理和启动验证）
     │   └── logs/           - 日志目录
     ├── Web Apps
     │   ├── index.html      - 旅行攻略主页 (1323行)
@@ -33,24 +33,14 @@ Hermit-Claw 容器 (Agent Type: claude)
 
 ### 最新会话记录
 
-```
-[2026-05-10 19:15:50] 初始化会话开始
-[2026-05-10 19:15:50] 检查 Web App 8082 项目
-[2026-05-10 19:15:50] 检查项目目录结构
-[2026-05-10 19:15:50] 读取 systemreadme.md 了解系统规范
-[2026-05-10 19:15:50] 创建 user_start.sh 启动脚本
-
-[2026-05-10 19:17:37] 开发大同-太原-南京旅行攻略 HTML5 页面
-[2026-05-10 19:17:48] 部署在8082端口上
-
-[2026-05-10 19:41:20] 使用 Playwright 测试导航功能
-[2026-05-10 19:41:20] 测试 http://dimond.top:18083/ 和 /csv 路径
-[2026-05-10 19:41:20] 修复 CSV 页面无内容问题
-
-[2026-05-10 20:02:39] 开发日程管理页面
-[2026-05-10 20:02:39] 连接 Supabase 数据库
-[2026-05-10 20:02:39] 实现时间冲突检测功能
-```
+| 时间 | 操作 | 产出 |
+|------|------|------|
+| 19:15:50 | 初始化会话，检查项目目录 | 创建启动脚本、README、SKILL |
+| 19:17:37 | 开发旅行攻略 + 部署 | index.html + 部署到 8082 |
+| 19:41:20 | Playwright 测试导航功能 | navigation.spec.js |
+| 20:02:39 | 开发日程管理应用 | schedule.html + 时间冲突检测 |
+| 20:12:32 | 修复启动脚本问题 | 服务成功启动 |
+| 20:18:30 | 再次修复启动脚本 | user_start.sh 完善 |
 
 ### 关键操作记录
 
@@ -128,6 +118,40 @@ postgresql://postgres.uacwkmdyekxyqtopdele:Black_supabase00@aws-1-ap-northeast-2
 npm install @supabase/supabase-js @supabase/ssr
 ```
 
+## 启动脚本 user_start.sh 功能说明
+
+### 脚本特性
+
+```bash
+#!/bin/bash
+# Hermit-Claw Web App 8082 启动脚本
+
+# 1. 自动清理旧进程
+pkill -f "node server.js" 2>/dev/null || true
+
+# 2. 日志管理（清空旧日志）
+echo "========================================" > logs/start.log
+
+# 3. 启动验证（curl 检查 HTTP 200）
+if curl -s -o /dev/null -w "%{http_code}" http://localhost:8082/ | grep -q "200"; then
+    echo "✓ Web 服务器启动成功"
+fi
+```
+
+### 日志输出示例
+
+```
+========================================
+[Sun May 10 12:19:42 UTC 2026] 启动 Web App 8082
+========================================
+[Sun May 10 12:19:42 UTC 2026] 检查并清理旧进程...
+[Sun May 10 12:19:43 UTC 2026] 工作目录: /home/agent/.claude/workspace/project
+[Sun May 10 12:19:43 UTC 2026] 启动 Node.js 静态文件服务器 (端口8082)
+[Sun May 10 12:19:45 UTC 2026] ✓ Web 服务器启动成功 (PID: 764)
+[Sun May 10 12:19:45 UTC 2026] 服务地址: http://localhost:8082/
+[Sun May 10 12:19:45 UTC 2026] 启动脚本执行完成
+```
+
 ## 关键规范要点
 
 ### 1. 端口规范
@@ -179,6 +203,15 @@ npm install @supabase/supabase-js @supabase/ssr
 - 测试 URL: http://dimond.top:18083/
 - 测试文件: navigation.spec.js
 - 验证导航按钮跳转功能
+
+## 访问地址
+
+| 服务 | 容器内地址 | 宿主机地址 |
+|------|-----------|-----------|
+| 主站 | http://localhost:8082/ | http://dimond.top:18083/ |
+| AI助手 | http://localhost:8082/ai-assistant | http://dimond.top:18083/ai-assistant |
+| CSV工具 | http://localhost:8082/csv | http://dimond.top:18083/csv |
+| 日程管理 | http://localhost:8082/schedule | http://dimond.top:18083/schedule |
 
 ## 主人联系方式
 

@@ -14,12 +14,26 @@
 | 日志目录 | `logs/` |
 | 端口映射 | 容器内 8082 → 宿主机 18081-19999 |
 
+## 快速启动
+
+```bash
+# 方式1: 使用启动脚本（推荐）
+bash /home/agent/.claude/workspace/project/user_start.sh
+
+# 方式2: 手动启动
+cd /home/agent/.claude/workspace/project
+node server.js
+
+# 方式3: 停止服务
+pkill -f "node server.js"
+```
+
 ## 项目结构
 
 ```
-project/
+/home/agent/.claude/workspace/project/
 ├── server.js              # Node.js 静态文件服务器 (端口8082)
-├── user_start.sh         # 启动脚本（容器启动时自动执行）
+├── user_start.sh          # 启动脚本（容器启动时自动执行）
 │
 ├── HTML 页面
 │   ├── index.html         # 大同-太原-南京旅行攻略主页
@@ -92,14 +106,25 @@ project/
 连接池: postgresql://postgres.uacwkmdyekxyqtopdele:Black_supabase00@aws-1-ap-northeast-2.pooler.supabase.com:5432/postgres
 ```
 
-## 启动脚本
+## 启动脚本特性
 
-`user_start.sh` 会在容器启动时自动执行，启动 Node.js 静态文件服务器：
+`user_start.sh` 提供以下功能：
 
-```bash
-#!/bin/bash
-cd /home/agent/.claude/workspace/project
-node server.js >> logs/start.log 2>&1 &
+1. **自动清理旧进程** - 启动前清理残留的 node server.js 进程
+2. **日志管理** - 清空旧日志，避免重复记录
+3. **启动验证** - 启动后自动验证服务是否正常（HTTP 200）
+4. **详细日志** - 记录 PID、监听地址等信息
+
+**日志输出示例**:
+```
+========================================
+[Sun May 10 12:19:42 UTC 2026] 启动 Web App 8082
+========================================
+[Sun May 10 12:19:42 UTC 2026] 检查并清理旧进程...
+[Sun May 10 12:19:43 UTC 2026] 启动 Node.js 静态文件服务器 (端口8082)
+[Sun May 10 12:19:45 UTC 2026] ✓ Web 服务器启动成功 (PID: 764)
+[Sun May 10 12:19:45 UTC 2026] 服务地址: http://localhost:8082/
+[Sun May 10 12:19:45 UTC 2026] 启动脚本执行完成
 ```
 
 ## 测试
@@ -107,11 +132,23 @@ node server.js >> logs/start.log 2>&1 &
 使用 Playwright 进行端到端测试：
 
 ```bash
+# 安装依赖
 npm install
+
+# 运行测试
 npx playwright test
 ```
 
 测试文件 `navigation.spec.js` 验证导航按钮跳转功能。
+
+## 访问地址
+
+| 服务 | 容器内地址 | 宿主机地址 |
+|------|-----------|-----------|
+| 主站 | http://localhost:8082/ | http://dimond.top:18083/ |
+| AI助手 | http://localhost:8082/ai-assistant | http://dimond.top:18083/ai-assistant |
+| CSV工具 | http://localhost:8082/csv | http://dimond.top:18083/csv |
+| 日程管理 | http://localhost:8082/schedule | http://dimond.top:18083/schedule |
 
 ## 开发规范
 
@@ -120,12 +157,13 @@ npx playwright test
 3. **Git 管理**: 每次会话后必须 `git commit`
 4. **测试要求**: 功能必须端到端测试通过才能交付
 
-## 核心职责
+## Git 提交历史
 
-1. 开发、测试、发现 bug 并变更
-2. 维护 Web App 8082 的正常运行
-3. 确保每次部署的功能完整性
-4. 严格遵循主人的需求，不变通
+```
+a67cb16 - 完善项目文档并添加多个Web App页面
+6327a64 - 添加大同-太原-南京旅行攻略 HTML5 页面
+3be38d6 - 初始化 Web App 8082 项目环境
+```
 
 ## 主人联系方式
 
