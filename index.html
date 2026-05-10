@@ -7,7 +7,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --bg-cream: #FDF8F3;
@@ -565,13 +564,51 @@
     <div id="toast" class="toast"></div>
 
     <script>
-        // Supabase 配置
-        const SUPABASE_URL = 'https://uacwkmdyekxyqtopdele.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhY3drbWR5ZWt4eXF0b3BkZWxlIiwicmlkIjoiNTc4OTkzNTk3MDM0ODU4NzkzNDgiLCJpYXQiOjE3NDg2ODQ2MDAsImV4cCI6MjA2NDI2MDYwMH0.EU5UJ8x1nNGni4T4wP1Y7Y8hPmY9R5vL6kGJ3xC_p9c';
-
-        let supabase = null;
+        // ============================================
+        // 第二栏日程列表 - 纯前端 localStorage 实现
+        // ============================================
         let schedules = [];
         let deleteTargetId = null;
+        const STORAGE_KEY = 'schedules_data';
+
+        // 默认太原行程种子数据
+        const DEFAULT_SCHEDULES = [
+            {
+                id: 'seed-001',
+                title: '大同南 → 太原 G3769',
+                description: '高铁出行，记得提前取票',
+                start_time: '2026-05-24T01:03:00.000Z',
+                end_time: '2026-05-24T02:49:00.000Z'
+            },
+            {
+                id: 'seed-002',
+                title: '星巴克太原华域购物中心',
+                description: '候车休息，早餐补给',
+                start_time: '2026-05-24T03:00:00.000Z',
+                end_time: '2026-05-24T03:30:00.000Z'
+            },
+            {
+                id: 'seed-003',
+                title: '太原站 → 城市之光民宿',
+                description: '打车约15分钟',
+                start_time: '2026-05-24T03:30:00.000Z',
+                end_time: '2026-05-24T04:00:00.000Z'
+            },
+            {
+                id: 'seed-004',
+                title: '乐刻健身太原王府井',
+                description: '晨练保持体能',
+                start_time: '2026-05-24T14:00:00.000Z',
+                end_time: '2026-05-24T15:00:00.000Z'
+            },
+            {
+                id: 'seed-005',
+                title: '测试项目2',
+                description: '用于验证列表渲染',
+                start_time: '2026-05-15T10:00:00.000Z',
+                end_time: '2026-05-15T11:00:00.000Z'
+            }
+        ];
 
         // 颜色数组
         const colors = [
@@ -586,30 +623,53 @@
             return colors[hash % colors.length];
         }
 
+        // 生成 UUID
+        function generateId() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        // ============================================
+        // 数据持久化 - localStorage
+        // ============================================
+        function loadSchedules() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                try {
+                    schedules = JSON.parse(stored);
+                } catch (e) {
+                    schedules = [...DEFAULT_SCHEDULES];
+                }
+            } else {
+                // 首次使用，写入默认数据
+                schedules = [...DEFAULT_SCHEDULES];
+                saveSchedules();
+            }
+            // 按开始时间排序
+            schedules.sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+        }
+
+        function saveSchedules() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(schedules));
+        }
+
+        // ============================================
         // 初始化
+        // ============================================
         document.addEventListener('DOMContentLoaded', () => {
-            initSupabase(SUPABASE_URL, SUPABASE_KEY);
-            initForm();
-            initTravelSection();
+            loadSchedules();          // 加载本地数据
+            renderSchedules();       // 立即渲染列表
+            updateStats();           // 更新统计
+            initForm();              // 初始化表单
+            initTravelSection();     // 初始化旅行规划
         });
 
-        // 初始化 Supabase
-        function initSupabase(url, key) {
-            supabase = window.supabase.createClient(url, key);
-            fetchSchedules();
-        }
-
-        // API 请求封装
-        async function apiRequest(method, path, data = null) {
-            const options = { method, headers: { 'Content-Type': 'application/json' } };
-            if (data) options.body = JSON.stringify(data);
-            const response = await fetch(path, options);
-            const result = await response.json();
-            if (!response.ok) throw new Error(result.error || '请求失败');
-            return result;
-        }
-
-        // 初始化表单
+        // ============================================
+        // 表单处理
+        // ============================================
         function initForm() {
             const form = document.getElementById('scheduleForm');
             const startTime = document.getElementById('startTime');
@@ -628,7 +688,6 @@
             form.addEventListener('submit', handleSubmit);
         }
 
-        // 格式化日期为 datetime-local 格式
         function formatDateTimeLocal(date) {
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -638,29 +697,25 @@
             return `${year}-${month}-${day}T${hours}:${minutes}`;
         }
 
-        // 解析 datetime-local 格式
         function parseDateTimeLocal(value) {
             return new Date(value);
         }
 
-        // 检查时间冲突
         function checkConflicts() {
             const startTime = document.getElementById('startTime').value;
             const endTime = document.getElementById('endTime').value;
             const editId = document.getElementById('editId').value;
 
-            if (!startTime || !endTime || !supabase) return;
+            if (!startTime || !endTime) return;
 
             const start = parseDateTimeLocal(startTime);
             const end = parseDateTimeLocal(endTime);
 
-            // 验证时间顺序
             if (end <= start) {
                 showConflictWarning('结束时间必须晚于开始时间');
                 return;
             }
 
-            // 检查冲突
             const conflicts = schedules.filter(s => {
                 if (editId && s.id === editId) return false;
                 const sStart = new Date(s.start_time);
@@ -676,20 +731,17 @@
             }
         }
 
-        // 显示冲突警告
         function showConflictWarning(message) {
             const warning = document.getElementById('conflictWarning');
             document.getElementById('conflictList').textContent = message;
             warning.classList.add('show');
         }
 
-        // 隐藏冲突警告
         function hideConflictWarning() {
             document.getElementById('conflictWarning').classList.remove('show');
         }
 
-        // 处理表单提交
-        async function handleSubmit(e) {
+        function handleSubmit(e) {
             e.preventDefault();
 
             const title = document.getElementById('title').value.trim();
@@ -716,7 +768,6 @@
                 return;
             }
 
-            // 检查冲突
             const conflicts = schedules.filter(s => {
                 if (editId && s.id === editId) return false;
                 const sStart = new Date(s.start_time);
@@ -730,37 +781,33 @@
             }
 
             const data = {
+                id: editId || generateId(),
                 title,
                 description,
                 start_time: start.toISOString(),
                 end_time: end.toISOString()
             };
 
-            try {
-                if (editId) {
-                    const { error } = await supabase
-                        .from('schedules')
-                        .update({ ...data, updated_at: new Date().toISOString() })
-                        .eq('id', editId);
-                    if (error) throw error;
+            if (editId) {
+                // 更新
+                const idx = schedules.findIndex(s => s.id === editId);
+                if (idx !== -1) {
+                    schedules[idx] = data;
                     showToast('日程已更新', 'success');
-                } else {
-                    const { error } = await supabase
-                        .from('schedules')
-                        .insert([data]);
-                    if (error) throw error;
-                    showToast('日程已添加', 'success');
                 }
-
-                resetForm();
-                fetchSchedules();
-            } catch (error) {
-                console.error('保存失败:', error);
-                showToast('保存失败: ' + error.message, 'error');
+            } else {
+                // 新增
+                schedules.push(data);
+                showToast('日程已添加', 'success');
             }
+
+            saveSchedules();
+            schedules.sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+            renderSchedules();
+            updateStats();
+            resetForm();
         }
 
-        // 重置表单
         function resetForm() {
             document.getElementById('scheduleForm').reset();
             document.getElementById('editId').value = '';
@@ -769,7 +816,6 @@
             document.getElementById('cancelBtn').style.display = 'none';
             hideConflictWarning();
 
-            // 重置时间
             const now = new Date();
             now.setMinutes(0, 0, 0);
             const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
@@ -777,42 +823,13 @@
             document.getElementById('endTime').value = formatDateTimeLocal(oneHourLater);
         }
 
-        // 取消编辑
         function cancelEdit() {
             resetForm();
         }
 
-        // 获取日程列表
-        async function fetchSchedules() {
-            if (!supabase) return;
-            const container = document.getElementById('scheduleList');
-
-            try {
-                const { data, error } = await supabase
-                    .from('schedules')
-                    .select('*')
-                    .order('start_time', { ascending: true });
-
-                if (error) throw error;
-
-                schedules = data || [];
-                renderSchedules();
-                updateStats();
-            } catch (error) {
-                console.error('获取日程失败:', error);
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="icon" style="color: var(--danger)">⚠️</div>
-                        <p>获取数据失败</p>
-                        <small style="color: var(--text-gray)">${error.message}</small>
-                        <button class="btn btn-secondary btn-sm" style="margin-top: 10px" onclick="fetchSchedules()">重试</button>
-                    </div>
-                `;
-                showToast('获取数据失败: ' + error.message, 'error');
-            }
-        }
-
+        // ============================================
         // 渲染日程列表
+        // ============================================
         function renderSchedules() {
             const container = document.getElementById('scheduleList');
 
@@ -850,7 +867,6 @@
             }).join('');
         }
 
-        // 格式化时间显示
         function formatDateTime(date) {
             const month = date.getMonth() + 1;
             const day = date.getDate();
@@ -859,7 +875,6 @@
             return `${month}月${day}日 ${hours}:${minutes}`;
         }
 
-        // 更新统计
         function updateStats() {
             const total = schedules.length;
             const today = new Date();
@@ -876,7 +891,6 @@
             document.getElementById('todayCount').textContent = todayCount;
         }
 
-        // 编辑日程
         function editSchedule(id) {
             const schedule = schedules.find(s => s.id === id);
             if (!schedule) return;
@@ -891,70 +905,52 @@
             document.getElementById('submitBtn').textContent = '保存修改';
             document.getElementById('cancelBtn').style.display = 'block';
 
-            // 检查冲突
             checkConflicts();
-
-            // 滚动到表单
             document.querySelector('.form-section').scrollIntoView({ behavior: 'smooth' });
         }
 
-        // 显示删除弹窗
         function showDeleteModal(id) {
             deleteTargetId = id;
             document.getElementById('deleteModal').classList.add('show');
         }
 
-        // 关闭删除弹窗
         function closeDeleteModal() {
             document.getElementById('deleteModal').classList.remove('show');
             deleteTargetId = null;
         }
 
-        // 确认删除
-        document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
-            if (!deleteTargetId || !supabase) return;
+        document.getElementById('confirmDeleteBtn').addEventListener('click', () => {
+            if (!deleteTargetId) return;
 
-            try {
-                const { error } = await supabase
-                    .from('schedules')
-                    .delete()
-                    .eq('id', deleteTargetId);
+            schedules = schedules.filter(s => s.id !== deleteTargetId);
+            saveSchedules();
+            renderSchedules();
+            updateStats();
 
-                if (error) throw error;
-
-                showToast('日程已删除', 'success');
-                closeDeleteModal();
-                fetchSchedules();
-            } catch (error) {
-                console.error('删除失败:', error);
-                showToast('删除失败: ' + error.message, 'error');
-            }
+            showToast('日程已删除', 'success');
+            closeDeleteModal();
         });
 
-        // 显示 Toast
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
             toast.textContent = message;
             toast.className = `toast ${type} show`;
-
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 3000);
+            setTimeout(() => toast.classList.remove('show'), 3000);
         }
 
-        // HTML 转义
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
 
-        // 旅行规划相关功能
+        // ============================================
+        // 旅行规划
+        // ============================================
         function initTravelSection() {
             const travelStatus = document.getElementById('travelStatus');
             const travelFrame = document.getElementById('travelFrame');
 
-            // 检查 sidebar.html 是否存在
             fetch('sidebar.html')
                 .then(res => {
                     if (res.ok) {
@@ -973,11 +969,9 @@
                     travelStatus.innerHTML = '<p>加载规划失败</p>';
                 });
 
-            // 每半小时检查一次
             setInterval(updateTravelPlans, 30 * 60 * 1000);
         }
 
-        // 更新旅行规划
         async function updateTravelPlans() {
             try {
                 const statusEl = document.getElementById('travelStatus');
@@ -985,7 +979,6 @@
                 statusEl.style.display = 'block';
                 document.getElementById('travelFrame').style.display = 'none';
 
-                // 调用 API 触发旅行规划生成
                 const response = await fetch('http://localhost:8082/api/travel/generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1003,12 +996,6 @@
                 console.error('更新旅行规划失败:', error);
             }
         }
-
-        // 初始化旅行规划区域
-        document.addEventListener('DOMContentLoaded', () => {
-            initTravelSection();
-        });
-
     </script>
 </body>
 </html>
