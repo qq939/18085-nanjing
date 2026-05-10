@@ -1,12 +1,8 @@
-logs/
 node_modules/
-.DS_Store
-__pycache__/
-*.log
-.env
-uploads/
 dist/
 build/
-*.pyc
-create_schedule.py
-test_schedule_exists.py
+.DS_Store
+*.log
+.env
+logs/
+test-results/
