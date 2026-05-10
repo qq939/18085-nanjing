@@ -1,32 +1,33 @@
-# Web App 8082 - 项目说明
+# Web App 8082 - 日程管理应用
 
 ## 项目概述
 
-本项目是 Hermit-Claw 容器内的 Web Application 工作空间，负责在 8082 端口运行多个 Web 服务。
+基于 Hermit-Claw 容器的日程管理 Web App，运行在 **8082 端口**，支持日程增删改查和 AI 旅行规划生成。
 
-## 项目信息
-
-| 项目属性 | 值 |
-|---------|-----|
-| 项目类型 | Web App (8082端口) |
+| 属性 | 值 |
+|------|-----|
+| 类型 | Web App (8082端口) |
 | 工作目录 | `/home/agent/.claude/workspace/project` |
 | 启动脚本 | `user_start.sh` |
 | 日志目录 | `logs/` |
 | 端口映射 | 容器内 8082 → 宿主机 18081-19999 |
 
+---
+
 ## 快速启动
 
 ```bash
-# 方式1: 使用启动脚本（推荐）
-bash /home/agent/.claude/workspace/project/user_start.sh
+# 使用启动脚本（推荐）
+bash user_start.sh
 
-# 方式2: 手动启动
-cd /home/agent/.claude/workspace/project
+# 手动启动
 node server.js
 
-# 方式3: 停止服务
-pkill -f "node server.js"
+# 停止服务
+pkill -f "node.*server.js"
 ```
+
+---
 
 ## 项目结构
 
@@ -34,163 +35,171 @@ pkill -f "node server.js"
 /home/agent/.claude/workspace/project/
 ├── server.js              # Node.js 静态文件服务器 (端口8082)
 ├── user_start.sh          # 启动脚本（容器启动时自动执行）
-│
-├── HTML 页面
-│   └── index.html         # 日程管理主页
-│
-├── 数据库配置
-│   └── supabase_schema.sql # Supabase 数据库表结构
-│
-├── 测试文件
-│   ├── navigation.spec.js    # Playwright 导航测试
-│   └── playwright.config.js   # Playwright 配置
-│
-├── 配置文件
-│   ├── config.example.json   # 配置示例
-│   └── node_modules/          # npm 依赖
-│
-├── 文档
-│   ├── README.md          # 项目说明
-│   ├── SKILL.md          # Agent 技能文档
-│   ├── systemreadme.md   # 系统惯例文档
-│   ├── AGENTS.md         # Agent 工作规范
-│   ├── SOUL.md           # Agent 核心价值观
-│   └── IDENTITY.md       # Agent 身份定义
-│
+├── index.html             # 日程管理主页（三栏布局）
+├── sidebar.html           # 旅行规划（iframe 嵌套）
+├── supabase_schema.sql    # 数据库表结构
+├── schedule-list.spec.js  # Playwright 日程列表测试
+├── playwright.config.js    # Playwright 配置
 └── logs/
-    ├── start.log         # 启动日志
-    ├── run.log           # 运行日志
-    └── agent_tui.log     # Claude TUI 会话日志
+    ├── start.log          # 启动日志
+    └── run.log            # 运行日志
 ```
 
-## Web App 功能模块
+---
 
-### 日程管理 (index.html) - 三栏布局
+## 功能模块
 
-**布局结构**:
-- 第一栏(350px): 添加/编辑日程表单
-- 第二栏(1fr): 日程列表（按开始时间排序）
-- 第三栏(380px): 旅行规划（嵌套 sidebar.html）
+### 三栏布局
 
-**功能**:
-- 事项名称、描述管理
-- 开始时间、结束时间（datetime-local 选择器，两行布局）
-- 增删改查日程
-- **时间段冲突检测** - 实时检查并阻止冲突日程
-- Supabase PostgreSQL 直连
-- **每30分钟自动生成旅行规划** - 调用 Claude CLI 生成小红书风格攻略
-
-**技术栈**:
-- HTML5 + CSS3 + Vanilla JavaScript
-- Node.js (pg) 直连 PostgreSQL
-- Claude CLI 调用生成旅行规划
-- 字体: Noto Sans SC
-- 颜色: 珊瑚粉 #FF6B6B + 蜜桃色 #FFB88C + 橙色 #FF9F43
-
-**API 端点**:
-| 方法 | 路径 | 说明 |
+| 栏位 | 宽度 | 内容 |
 |------|------|------|
-| GET | /api/schedules | 获取所有日程 |
-| POST | /api/schedules | 创建日程（含冲突检测） |
-| PUT | /api/schedules/:id | 更新日程 |
-| DELETE | /api/schedules/:id | 删除日程 |
-| POST | /api/travel/generate | 生成旅行规划 |
+| 第一栏 | 350px | 添加/编辑日程表单 |
+| 第二栏 | 1fr | 日程列表（支持总日程/今日切换） |
+| 第三栏 | 380px | AI 旅行规划 iframe |
 
-**数据库配置 (Supabase 直连)**:
-```javascript
-// 连接池（推荐）
-postgresql://postgres.uacwkmdyekxyqtopdele:Black_supabase00@aws-1-ap-northeast-2.pooler.supabase.com:5432/postgres
-```
+### 日程管理 (index.html)
 
-**数据库表结构 (schedules)**:
-```sql
-- id (UUID主键)
-- title (事项名称，必填，最多200字符)
-- description (描述)
-- start_time (开始时间，TIMESTAMPTZ)
-- end_time (结束时间，TIMESTAMPTZ)
-- created_at / updated_at (时间戳)
-- CHECK约束确保结束时间 > 开始时间
-```
+**技术栈**: HTML5 + CSS3 + Vanilla JavaScript（无框架依赖）
+
+**核心功能**:
+- ✅ 事项名称、描述管理
+- ✅ 开始/结束时间（datetime-local 选择器）
+- ✅ 时间段冲突检测（实时阻止冲突日程）
+- ✅ localStorage 本地持久化（离线可用）
+- ✅ 总日程/今日 tab 切换筛选
+- ✅ 增删改查 + Toast 提示
+
+**颜色主题**: 珊瑚粉 #FF6B6B | 蜜桃色 #FFB88C | 橙色 #FF9F43
+
+**字体**: Noto Sans SC
 
 ### 旅行规划 (sidebar.html)
 
-**功能**:
-- 根据数据库日程自动生成小红书风格旅行攻略
-- 包含交通建议、餐饮推荐、住宿建议、景点攻略
-- 每30分钟自动刷新（如有日程变化）
-- 格式适配第三栏宽度（380px）
+- 由 Claude CLI 根据日程数据自动生成
+- 小红书风格，包含交通、餐饮、景点建议
+- 格式适配第三栏（380px 宽度）
+- 每 30 分钟自动刷新（如有日程变化）
 
 **生成逻辑**:
-- 前端每30分钟调用 `/api/travel/generate`
-- API 将日程数据写入 `travel_input.json`
-- 调用 Claude CLI 生成 `sidebar.html`
-- 第三栏 iframe 嵌套显示
+1. 前端 `setInterval` 每 30 分钟调用 `POST /api/travel/generate`
+2. API 将日程写入 `travel_input.json`
+3. 调用 Claude CLI 生成 `sidebar.html`
+4. 第三栏 iframe 刷新显示
 
-## 启动脚本特性
+---
 
-`user_start.sh` 提供以下功能：
+## 架构设计原则
 
-1. **自动清理旧进程** - 启动前清理残留的 node server.js 进程
-2. **日志管理** - 清空旧日志，避免重复记录
-3. **启动验证** - 启动后自动验证服务是否正常（HTTP 200）
-4. **详细日志** - 记录 PID、监听地址等信息
+### 1. 极简前端架构
 
-**日志输出示例**:
-```
-========================================
-[Sun May 10 12:19:42 UTC 2026] 启动 Web App 8082
-========================================
-[Sun May 10 12:19:42 UTC 2026] 检查并清理旧进程...
-[Sun May 10 12:19:43 UTC 2026] 启动 Node.js 静态文件服务器 (端口8082)
-[Sun May 10 12:19:45 UTC 2026] ✓ Web 服务器启动成功 (PID: 764)
-[Sun May 10 12:19:45 UTC 2026] 服务地址: http://localhost:8082/
-[Sun May 10 12:19:45 UTC 2026] 启动脚本执行完成
-```
+- **无框架依赖**: 纯 HTML + CSS + Vanilla JS，单文件交付
+- **localStorage 优先**: 日程数据存储在浏览器本地，离线可用，无需后端数据库
+- **Supabase 已移除**: 第二栏不再依赖外部数据库，彻底解决连接问题
 
-## 测试
+### 2. 后端仅提供旅行规划
 
-使用 Playwright 进行端到端测试：
+- `server.js` 是轻量静态文件服务器
+- 仅在 `/api/travel/generate` 路由调用 Claude CLI 生成旅行规划
+- 其他功能由前端独立完成
 
-```bash
-# 安装依赖
-npm install
+### 3. 移动端优先
 
-# 运行测试
-npx playwright test
-```
+- 三栏布局在移动端自动切换为单栏
+- 统计数字改为 tab 切换，节省空间
+- 最小高度 400px，确保内容可见
 
-## 访问地址
-
-| 服务 | 容器内地址 | 宿主机地址 |
-|------|-----------|-----------|
-| 日程管理 | http://localhost:8082/ | http://dimond.top:18083/ |
+---
 
 ## 开发规范
 
-1. **端口规范**: Web App 必须监听 **8082** 端口
-2. **日志规范**: 所有日志输出到 `logs/` 目录
-3. **Git 管理**: 每次会话后必须 `git commit`
-4. **测试要求**: 功能必须端到端测试通过才能交付
-5. **Supabase 配置**: 连接信息写入代码，不在前端配置
+### Git 管理
+
+每次对话后必须提交：
+
+```bash
+git add .
+git commit -m "描述本次变更"
+git push origin master
+```
+
+### 测试要求
+
+- 使用 Playwright 进行端到端测试
+- 功能必须测试通过才能交付
+- 测试文件: `schedule-list.spec.js`
+
+```bash
+npx playwright test schedule-list.spec.js
+```
+
+### 日志规范
+
+- Web App 运行日志: `logs/run.log`
+- 启动脚本日志: `logs/start.log`
+- 禁止删除 `logs/` 目录（bind mount）
+
+---
+
+## API 端点
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/` | 主页 index.html |
+| GET | `/sidebar.html` | 旅行规划页面 |
+| POST | `/api/travel/generate` | 生成旅行规划 |
+
+---
+
+## 数据结构
+
+### 日程对象 (localStorage)
+
+```javascript
+{
+  id: string,           // UUID
+  title: string,         // 事项名称
+  description: string,  // 描述（可选）
+  start_time: string,   // ISO 8601 时间
+  end_time: string       // ISO 8601 时间
+}
+```
+
+### 存储键名
+
+- `schedules_data`: 日程数据（JSON 数组）
+
+---
+
+## 默认种子数据
+
+首次使用时预置太原行程：
+
+1. 大同南 → 太原 G3769（高铁）
+2. 星巴克太原华域购物中心（早餐）
+3. 太原站 → 城市之光民宿（交通）
+4. 乐刻健身太原王府井（晨练）
+5. 测试项目（验证列表渲染）
+
+---
+
+## 容器环境
+
+- **端口**: 8082
+- **日志**: `logs/start.log`, `logs/run.log`
+- **工作目录**: `/home/agent/.claude/workspace/project`
+- **启动脚本**: `user_start.sh`
+
+---
 
 ## Git 提交历史
 
-```
-f8a9c3d - 更新三栏布局和旅行规划功能
-e856601 - 修复启动脚本并完善项目文档
-a67cb16 - 完善项目文档并添加多个Web App页面
-6327a64 - 添加大同-太原-南京旅行攻略 HTML5 页面
-3be38d6 - 初始化 Web App 8082 项目环境
-```
+| Commit | 描述 |
+|--------|------|
+| 4eb0fd9 | 移动端优化-统计栏改为同行tab切换 |
+| 750c99e | 第二栏改用localStorage，彻底去掉Supabase |
+| d3e1d87 | 初始版本（Supabase 架构） |
 
-## 最后3轮对话总结
-
-| 轮次 | 时间 | 用户要求 | 产出 |
-|------|------|----------|------|
-| 第1轮 | 23:02:58 | 三栏布局，第三栏用Claude生成旅行规划sidebar.html | index.html (三栏) + sidebar.html + server.js API |
-| 第2轮 | 23:12:17 | 数据库有数据但第二栏空着；时间放两行 | 修复布局，时间输入改为两行 |
-| 第3轮 | 23:39:28 | 完整开发流程检查 | 整理日志、更新README/SKILL |
+---
 
 ## 主人联系方式
 
