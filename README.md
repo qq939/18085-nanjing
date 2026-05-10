@@ -36,74 +36,70 @@ pkill -f "node server.js"
 ├── user_start.sh          # 启动脚本（容器启动时自动执行）
 │
 ├── HTML 页面
-│   ├── index.html         # 大同-太原-南京旅行攻略主页
-│   ├── ai-assistant.html  # AI对话助手页面
-│   ├── csv.html           # CSV工具页面
-│   └── schedule.html      # 日程管理页面
+│   └── index.html         # 日程管理主页
+│
+├── 数据库配置
+│   └── supabase_schema.sql # Supabase 数据库表结构
 │
 ├── 测试文件
 │   ├── navigation.spec.js    # Playwright 导航测试
 │   └── playwright.config.js   # Playwright 配置
 │
 ├── 配置文件
-│   ├── package.json           # npm 配置
+│   ├── config.example.json   # 配置示例
 │   └── node_modules/          # npm 依赖
 │
 ├── 文档
 │   ├── README.md          # 项目说明
-│   ├── SKILL.md           # Agent 技能文档
-│   ├── systemreadme.md    # 系统惯例文档
-│   ├── AGENTS.md          # Agent 工作规范
-│   ├── SOUL.md            # Agent 核心价值观
-│   └── IDENTITY.md        # Agent 身份定义
+│   ├── SKILL.md          # Agent 技能文档
+│   ├── systemreadme.md   # 系统惯例文档
+│   ├── AGENTS.md         # Agent 工作规范
+│   ├── SOUL.md           # Agent 核心价值观
+│   └── IDENTITY.md       # Agent 身份定义
 │
 └── logs/
-    ├── start.log          # 启动日志
-    ├── run.log            # 运行日志
-    └── agent_tui.log      # Claude TUI 会话日志
+    ├── start.log         # 启动日志
+    ├── run.log           # 运行日志
+    └── agent_tui.log     # Claude TUI 会话日志
 ```
 
 ## Web App 功能模块
 
-### 1. 旅行攻略主页 (index.html)
+### 日程管理 (index.html)
 
-**功能**: 大同-太原-南京旅行攻略页面
-
-| 模块 | 说明 |
-|------|------|
-| Hero 封面 | 路线概览，动态入场动画 |
-| 统计卡片 | 行程天数、城市数、景点数、预算 |
-| 交通指南 | 大同↔太原↔南京的高铁信息 |
-| 城市攻略 | 大同(云冈石窟)、太原(晋祠)、南京(夫子庙) |
-| 酒店推荐 | 三座城市住宿建议 |
-| 每日行程 | 5天4晚详细安排 |
-| 费用预算 | 总费用参考 |
+**功能**:
+- 事项名称、描述管理
+- 开始时间、结束时间（datetime-local 选择器）
+- 增删改查日程
+- **时间段冲突检测** - 实时检查并阻止冲突日程
+- Supabase 数据库持久化
+- 时间自动按开始时间排序
 
 **技术栈**:
 - HTML5 + CSS3 + Vanilla JavaScript
-- 字体: ZCOOL KuaiLe + Noto Sans SC
+- Supabase JS SDK
+- 字体: Noto Sans SC
 - 颜色: 珊瑚粉 #FF6B6B + 蜜桃色 #FFB88C + 橙色 #FF9F43
 
-### 2. AI 对话助手 (ai-assistant.html)
+**数据库配置 (Supabase)**:
+```javascript
+// 连接信息
+SUPABASE_URL = 'https://uacwkmdyekxyqtopdele.supabase.co'
+SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
 
-**功能**: AI 对话助手界面
-
-### 3. CSV 工具 (csv.html)
-
-**功能**: CSV 数据处理工具
-
-### 4. 日程管理 (schedule.html)
-
-**功能**:
-- 项目名称、起点时间、终点时间管理
-- 列表排列，支持添加/编辑/删除
-- 自动检测时间冲突，冲突高亮显示
-- Supabase 数据库支持
-- 本地存储后备
-
-**数据库配置**:
+// 连接池
+postgresql://postgres.uacwkmdyekxyqtopdele:Black_supabase00@aws-1-ap-northeast-2.pooler.supabase.com:5432/postgres
 ```
-连接池: postgresql://postgres.uacwkmdyekxyqtopdele:Black_supabase00@aws-1-ap-northeast-2.pooler.supabase.com:5432/postgres
+
+**数据库表结构 (schedules)**:
+```sql
+- id (UUID主键)
+- title (事项名称，必填，最多200字符)
+- description (描述)
+- start_time (开始时间，TIMESTAMPTZ)
+- end_time (结束时间，TIMESTAMPTZ)
+- created_at / updated_at (时间戳)
+- CHECK约束确保结束时间 > 开始时间
 ```
 
 ## 启动脚本特性
@@ -139,16 +135,11 @@ npm install
 npx playwright test
 ```
 
-测试文件 `navigation.spec.js` 验证导航按钮跳转功能。
-
 ## 访问地址
 
 | 服务 | 容器内地址 | 宿主机地址 |
 |------|-----------|-----------|
-| 主站 | http://localhost:8082/ | http://dimond.top:18083/ |
-| AI助手 | http://localhost:8082/ai-assistant | http://dimond.top:18083/ai-assistant |
-| CSV工具 | http://localhost:8082/csv | http://dimond.top:18083/csv |
-| 日程管理 | http://localhost:8082/schedule | http://dimond.top:18083/schedule |
+| 日程管理 | http://localhost:8082/ | http://dimond.top:18083/ |
 
 ## 开发规范
 
@@ -156,10 +147,12 @@ npx playwright test
 2. **日志规范**: 所有日志输出到 `logs/` 目录
 3. **Git 管理**: 每次会话后必须 `git commit`
 4. **测试要求**: 功能必须端到端测试通过才能交付
+5. **Supabase 配置**: 连接信息写入代码，不在前端配置
 
 ## Git 提交历史
 
 ```
+e856601 - 修复启动脚本并完善项目文档
 a67cb16 - 完善项目文档并添加多个Web App页面
 6327a64 - 添加大同-太原-南京旅行攻略 HTML5 页面
 3be38d6 - 初始化 Web App 8082 项目环境
