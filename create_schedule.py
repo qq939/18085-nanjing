@@ -70,9 +70,59 @@ def create_schedules_table():
     print("✓ schedules表创建成功")
     return True
 
+def create_functions():
+    """创建查询函数"""
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor()
+
+    cur.execute("""
+        CREATE OR REPLACE FUNCTION get_schedules_in_range(start_query TIMESTAMPTZ, end_query TIMESTAMPTZ)
+        RETURNS TABLE(id UUID, title TEXT, start_time TIMESTAMPTZ, end_time TIMESTAMPTZ) AS $$
+        BEGIN
+            RETURN QUERY
+            SELECT s.id, s.title, s.start_time, s.end_time
+            FROM schedules s
+            WHERE
+                s.start_time < end_query AND s.end_time > start_query
+            ORDER BY s.start_time;
+        END;
+        $$ LANGUAGE plpgsql
+    """)
+
+    cur.execute("""
+        CREATE OR REPLACE FUNCTION check_time_conflict(
+            start_query TIMESTAMPTZ,
+            end_query TIMESTAMPTZ,
+            exclude_id UUID DEFAULT NULL
+        )
+        RETURNS TABLE(id UUID, title TEXT, start_time TIMESTAMPTZ, end_time TIMESTAMPTZ) AS $$
+        BEGIN
+            RETURN QUERY
+            SELECT s.id, s.title, s.start_time, s.end_time
+            FROM schedules s
+            WHERE
+                s.start_time < end_query AND s.end_time > start_query
+                AND (exclude_id IS NULL OR s.id != exclude_id);
+        END;
+        $$ LANGUAGE plpgsql
+    """)
+
+    cur.execute("GRANT ALL ON FUNCTION get_schedules_in_range TO anon")
+    cur.execute("GRANT ALL ON FUNCTION get_schedules_in_range TO authenticated")
+    cur.execute("GRANT ALL ON FUNCTION check_time_conflict TO anon")
+    cur.execute("GRANT ALL ON FUNCTION check_time_conflict TO authenticated")
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    print("✓ 函数创建成功")
+    return True
+
 if __name__ == '__main__':
     try:
         create_schedules_table()
+        create_functions()
         signal.alarm(0)
         sys.exit(0)
     except Exception as e:

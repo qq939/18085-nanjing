@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""测试脚本：验证schedules表是否存在"""
+"""测试脚本：验证schedules表及相关函数是否存在"""
 import sys
 import os
 import signal
@@ -38,15 +38,46 @@ def test_schedule_table_exists():
     exists = cur.fetchone()[0]
     cur.close()
     conn.close()
-
     assert exists, "schedules表不存在"
     print("✓ schedules表已存在")
+    return True
+
+def test_functions_exist():
+    """测试函数是否存在"""
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT EXISTS (
+            SELECT FROM information_schema.routines
+            WHERE routine_schema = 'public'
+            AND routine_name = 'get_schedules_in_range'
+        )
+    """)
+    func1_exists = cur.fetchone()[0]
+    assert func1_exists, "get_schedules_in_range函数不存在"
+    print("✓ get_schedules_in_range函数已存在")
+
+    cur.execute("""
+        SELECT EXISTS (
+            SELECT FROM information_schema.routines
+            WHERE routine_schema = 'public'
+            AND routine_name = 'check_time_conflict'
+        )
+    """)
+    func2_exists = cur.fetchone()[0]
+    assert func2_exists, "check_time_conflict函数不存在"
+    print("✓ check_time_conflict函数已存在")
+
+    cur.close()
+    conn.close()
     return True
 
 if __name__ == '__main__':
     try:
         test_schedule_table_exists()
-        print("测试通过: schedules表已正确创建")
+        test_functions_exist()
+        print("测试通过: 所有表和函数已正确创建")
         signal.alarm(0)
         sys.exit(0)
     except Exception as e:
