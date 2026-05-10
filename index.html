@@ -599,6 +599,16 @@
             fetchSchedules();
         }
 
+        // API 请求封装
+        async function apiRequest(method, path, data = null) {
+            const options = { method, headers: { 'Content-Type': 'application/json' } };
+            if (data) options.body = JSON.stringify(data);
+            const response = await fetch(path, options);
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || '请求失败');
+            return result;
+        }
+
         // 初始化表单
         function initForm() {
             const form = document.getElementById('scheduleForm');
@@ -998,24 +1008,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             initTravelSection();
         });
+
     </script>
 </body>
-</html>('POST', '/api/travel/generate', {
-                    schedules: schedules
-                });
-
-                if (result.success) {
-                    statusEl.style.display = 'none';
-                    document.getElementById('travelFrame').style.display = 'block';
-                    // 刷新 iframe
-                    document.getElementById('travelFrame').src = 'sidebar.html?t=' + Date.now();
-                }
-            } catch (error) {
-                console.error('更新旅行规划失败:', error);
-            }
-        }
-
-        // 初始化旅行规划区域
-        document.addEventListener('DOMContentLoaded', () => {
-            initTravelSection();
-        });
+</html>
