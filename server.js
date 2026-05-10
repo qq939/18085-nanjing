@@ -13,7 +13,16 @@ const DATABASE_URL = process.env.DATABASE_URL ||
 // 创建 PostgreSQL 连接池
 const pool = new Pool({
     connectionString: DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
+    ssl: { rejectUnauthorized: false },
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
+});
+
+// 监听连接池错误
+pool.on('error', (err, client) => {
+    console.error('Unexpected error on idle client', err);
+    logRun(`Database Pool Error: ${err.message}`);
 });
 
 // MIME 类型映射
@@ -62,7 +71,9 @@ function jsonResponse(res, statusCode, data) {
 // 创建 HTTP 服务器
 const server = http.createServer(async (req, res) => {
     // 详细请求日志
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    const logMsg = `${req.method} ${req.url}`;
+    console.log(`[${new Date().toISOString()}] ${logMsg}`);
+    logRun(logMsg);
     
     // CORS 头
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -228,7 +239,7 @@ ${schedules.map(s => `- ${s.title}: ${s.start_time} ~ ${s.end_time}${s.descripti
 1. 生成小红书风格的旅行规划，包含真实图片链接
 2. 格式适配第三栏宽度（380px），字体适中
 3. 包含交通建议、餐饮推荐、住宿建议、景点攻略
-4. 直接写入 /home/agent/.claude/workspace/project/sidebar.html
+4. 直接写入 ${path.join(DIST_DIR, 'sidebar.html')}
 5. 使用 Unsplash 或类似图床获取真实图片
 6. 布局要美观，类似小红书笔记风格
 
