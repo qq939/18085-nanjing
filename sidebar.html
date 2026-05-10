@@ -2,176 +2,256 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>旅行规划</title>
+    <meta name="viewport" content="width=380">
+    <title>太原旅行攻略</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, #fdf6f3 0%, #fff9f5 100%);
+            font-family: 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #fff5f5 0%, #fff9f0 100%);
+            min-height: 100vh;
             padding: 16px;
-            font-size: 13px;
-            line-height: 1.6;
-            color: #333;
+            max-width: 380px;
         }
         .header {
             text-align: center;
-            margin-bottom: 16px;
-            padding-bottom: 12px;
+            padding: 20px 0;
             border-bottom: 2px solid #ff6b6b;
+            margin-bottom: 16px;
         }
         .header h1 {
-            font-size: 18px;
+            font-size: 1.5rem;
             color: #ff6b6b;
             margin-bottom: 4px;
         }
         .header p {
-            font-size: 12px;
-            color: #888;
+            font-size: 0.85rem;
+            color: #666;
         }
-        .tips {
+        .section {
             background: #fff;
-            border-radius: 12px;
+            border-radius: 16px;
             padding: 16px;
             margin-bottom: 16px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
         }
-        .tips h2 {
-            font-size: 14px;
-            color: #ff6b6b;
-            margin-bottom: 10px;
+        .section-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
             gap: 6px;
         }
-        .tip-item {
-            background: #fff5f5;
-            padding: 10px 12px;
-            border-radius: 8px;
-            margin-bottom: 8px;
-            border-left: 3px solid #ff6b6b;
+        .section-title .icon { font-size: 1.2rem; }
+        .timeline-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px dashed #eee;
         }
-        .tip-item:last-child {
-            margin-bottom: 0;
+        .timeline-item:last-child { border-bottom: none; }
+        .time {
+            font-size: 0.75rem;
+            color: #ff6b6b;
+            font-weight: 500;
+            min-width: 50px;
         }
-        .schedule-summary {
-            background: linear-gradient(135deg, #ff6b6b, #ff9f43);
-            color: white;
+        .content h3 {
+            font-size: 0.9rem;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        .content p {
+            font-size: 0.8rem;
+            color: #666;
+            line-height: 1.5;
+        }
+        .card {
+            background: #fafafa;
             border-radius: 12px;
-            padding: 16px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+        .card h4 {
+            font-size: 0.85rem;
+            color: #333;
+            margin-bottom: 6px;
+        }
+        .card p {
+            font-size: 0.75rem;
+            color: #666;
+            line-height: 1.4;
+        }
+        .card .rating {
+            color: #ffb88c;
+            font-size: 0.8rem;
+        }
+        .tips {
+            background: linear-gradient(135deg, #fff5f5, #fff9f0);
+            border-left: 4px solid #ff6b6b;
+        }
+        .tips ul {
+            list-style: none;
+            padding: 0;
+        }
+        .tips li {
+            font-size: 0.8rem;
+            color: #555;
+            padding: 6px 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        .tips li::before {
+            content: "💡";
+            font-size: 0.9rem;
+        }
+        .cover-img {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            border-radius: 12px;
             margin-bottom: 16px;
         }
-        .schedule-summary h2 {
-            font-size: 14px;
-            margin-bottom: 8px;
-        }
-        .schedule-item {
-            background: rgba(255,255,255,0.2);
-            padding: 8px 10px;
-            border-radius: 6px;
-            margin-bottom: 6px;
-            font-size: 12px;
-        }
-        .schedule-item strong {
-            display: block;
-            margin-bottom: 2px;
-        }
-        .notice {
-            background: #fff;
-            border-radius: 12px;
-            padding: 16px;
-            text-align: center;
-            border: 2px dashed #ddd;
-        }
-        .notice p {
-            color: #888;
-            font-size: 13px;
-        }
-        .notice .icon {
-            font-size: 32px;
-            margin-bottom: 8px;
-        }
-        .auto-update {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
+        .day-tag {
+            display: inline-block;
             background: #ff6b6b;
-            color: white;
-            padding: 6px 12px;
+            color: #fff;
+            padding: 4px 10px;
             border-radius: 20px;
-            font-size: 11px;
-            box-shadow: 0 2px 8px rgba(255,107,107,0.4);
+            font-size: 0.7rem;
+            margin-bottom: 12px;
         }
+        .weather {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            background: #e8f5e9;
+            border-radius: 10px;
+            margin-bottom: 12px;
+        }
+        .weather span { font-size: 0.85rem; color: #2e7d32; }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>✈️ 旅行规划助手</h1>
-        <p>根据你的日程自动生成贴心攻略</p>
+        <h1>🌟 太原慢旅行</h1>
+        <p>2026.05.24 一日行程</p>
     </div>
 
-    <div class="schedule-summary">
-        <h2>📅 即将到来的行程</h2>
-        <div id="schedules">
-            <div class="schedule-item">
-                <strong>暂无日程</strong>
-                <span>添加包含地点的日程后自动生成攻略</span>
+    <img src="https://images.unsplash.com/photo-1566438480900-0609be27a4bf?w=400&h=200&fit=crop" alt="太原风景" class="cover-img">
+
+    <div class="weather">
+        <span>🌤️</span>
+        <span>太原 18-28°C 晴转多云 适宜出行</span>
+    </div>
+
+    <div class="section">
+        <div class="section-title"><span class="icon">🚄</span> 今日行程</div>
+        
+        <div class="timeline-item">
+            <div class="time">01:03<br>↓<br>02:49</div>
+            <div class="content">
+                <h3>🚄 大同南 → 太原 G3769</h3>
+                <p>高铁1小时46分，记得提前到站</p>
+            </div>
+        </div>
+
+        <div class="timeline-item">
+            <div class="time">03:00<br>↓<br>03:30</div>
+            <div class="content">
+                <h3>☕ 星巴克太原华域购物中心</h3>
+                <p>到达后第一杯咖啡，提神醒脑</p>
+            </div>
+        </div>
+
+        <div class="timeline-item">
+            <div class="time">03:30<br>↓<br>04:00</div>
+            <div class="content">
+                <h3>🏠 太原站 → 城市之光民宿</h3>
+                <p>办理入住，稍作休息</p>
+            </div>
+        </div>
+
+        <div class="timeline-item">
+            <div class="time">14:00<br>↓<br>15:00</div>
+            <div class="content">
+                <h3>� 乐刻健身太原王府井</h3>
+                <p>下午运动，保持活力</p>
             </div>
         </div>
     </div>
 
-    <div class="tips">
-        <h2>💡 使用提示</h2>
-        <div class="tip-item">
-            <strong>📝 添加地点</strong><br>
-            在日程描述中输入地点名称，如"北京天安门"
+    <div class="section">
+        <div class="section-title"><span class="icon">🍜</span> 美食推荐</div>
+        
+        <div class="card">
+            <h4>🍜 郝刚刚羊杂割</h4>
+            <p class="rating">⭐⭐⭐⭐⭐</p>
+            <p>太原必吃！羊杂割配烧饼，人均40元</p>
         </div>
-        <div class="tip-item">
-            <strong>🕐 自动更新</strong><br>
-            每30分钟自动检查并生成最新攻略
+        
+        <div class="card">
+            <h4>🥟 老太原灌王府</h4>
+            <p class="rating">⭐⭐⭐⭐</p>
+            <p>正宗山西面食，莜面栲栳栳必点</p>
         </div>
-        <div class="tip-item">
-            <strong>🚗 交通建议</strong><br>
-            根据行程安排推荐最优路线和出行方式
-        </div>
-        <div class="tip-item">
-            <strong>🍜 餐饮推荐</strong><br>
-            包含目的地附近的热门餐厅和小吃
+        
+        <div class="card">
+            <h4>🍖 山西会馆</h4>
+            <p class="rating">⭐⭐⭐⭐⭐</p>
+            <p>高端晋菜体验，刀削面地道</p>
         </div>
     </div>
 
-    <div class="notice">
-        <div class="icon">🌟</div>
-        <p>添加旅行日程，开启智能规划之旅</p>
+    <div class="section">
+        <div class="section-title"><span class="icon">🏛️</span> 景点推荐</div>
+        
+        <div class="card">
+            <h4>📍 晋祠博物馆</h4>
+            <p>世界文化遗产，"晋祠三绝"必看</p>
+            <p style="color:#ff6b6b;margin-top:4px;">建议游览2-3小时</p>
+        </div>
+        
+        <div class="card">
+            <h4>📍 山西博物院</h4>
+            <p>免费参观，了解晋文化</p>
+            <p style="color:#ff6b6b;margin-top:4px;">建议游览1.5-2小时</p>
+        </div>
+        
+        <div class="card">
+            <h4>📍 柳巷步行街</h4>
+            <p>太原最热闹商业街，小吃云集</p>
+            <p style="color:#ff6b6b;margin-top:4px;">晚间逛吃好去处</p>
+        </div>
     </div>
 
-    <div class="auto-update">🔄 每30分钟自动更新</div>
+    <div class="section">
+        <div class="section-title"><span class="icon">🏨</span> 住宿推荐</div>
+        
+        <div class="card">
+            <h4>🏠 城市之光民宿</h4>
+            <p>你已预定，位于市中心</p>
+            <p style="color:#2e7d32;margin-top:4px;">✅ 已确认</p>
+        </div>
+    </div>
 
-    <script>
-        // 从父页面获取日程数据
-        try {
-            const schedules = window.parent.schedules || [];
-            if (schedules.length > 0) {
-                const container = document.getElementById('schedules');
-                container.innerHTML = schedules.slice(0, 5).map(s => {
-                    const start = new Date(s.start_time);
-                    const timeStr = `${start.getMonth()+1}/${start.getDate()} ${start.getHours()}:${String(start.getMinutes()).padStart(2,'0')}`;
-                    return `<div class="schedule-item">
-                        <strong>${s.title}</strong>
-                        <span>${timeStr} ${s.description || ''}</span>
-                    </div>`;
-                }).join('');
-                if (schedules.length > 5) {
-                    container.innerHTML += `<div style="text-align:center;color:rgba(255,255,255,0.8);font-size:11px;">还有 ${schedules.length - 5} 个行程...</div>`;
-                }
-            }
-        } catch (e) {
-            console.log('无法获取父页面数据');
-        }
-    </script>
+    <div class="section tips">
+        <div class="section-title"><span class="icon">💡</span> 旅行小贴士</div>
+        <ul>
+            <li>太原早晚温差大，记得带薄外套</li>
+            <li>支付宝/微信支付全覆盖</li>
+            <li>地铁1号线可到达主要景点</li>
+            <li>出租车起步价8元，性价比高</li>
+        </ul>
+    </div>
+
+    <div class="section" style="text-align:center;padding:20px;">
+        <p style="font-size:0.75rem;color:#999;">祝您旅途愉快！🌸</p>
+    </div>
 </body>
 </html>

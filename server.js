@@ -61,6 +61,9 @@ function jsonResponse(res, statusCode, data) {
 
 // 创建 HTTP 服务器
 const server = http.createServer(async (req, res) => {
+    // 详细请求日志
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    
     // CORS 头
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
