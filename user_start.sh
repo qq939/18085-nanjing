@@ -75,6 +75,28 @@ for i in {1..10}; do
         log "✓ Web 服务器启动成功 (PID: $SERVER_PID)"
         log "监听地址: http://0.0.0.0:8082"
         log "服务地址: http://localhost:8082/"
+
+        # ============================================
+        # 启动定时任务：每30分钟更新 sidebar.html
+        # ============================================
+        log "启动定时任务：每30分钟更新 sidebar.html..."
+
+        (
+            while true; do
+                sleep 1800  # 30分钟
+                HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8082/api/travel/generate \
+                    -H "Content-Type: application/json" \
+                    -d '{"schedules":[]}' 2>/dev/null || echo "000")
+                if [ "$HTTP_CODE" = "200" ]; then
+                    log "[cron] sidebar.html 已更新"
+                else
+                    log "[cron] 服务器无响应 (HTTP: $HTTP_CODE)"
+                fi
+            done
+        ) &
+        CRON_PID=$!
+        log "定时任务已启动 (PID: $CRON_PID)"
+
         log "启动脚本执行完成"
         exit 0
     fi
