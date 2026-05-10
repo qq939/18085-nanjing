@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日程管理器</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-light: #818CF8;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --bg: #F9FAFB;
+            --card: #FFFFFF;
+            --text: #111827;
+            --text-light: #6B7280;
+            --border: #E5E7EB;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: var(--text-light);
+        }
+
+        /* 冲突警告 */
+        .conflict-banner {
+            background: linear-gradient(135deg, #FEF3C7, #FDE68A);
+            border: 1px solid #FBBF24;
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1.5rem;
+            display: none;
+        }
+
+        .conflict-banner.show {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .conflict-banner .icon {
+            font-size: 1.5rem;
+        }
+
+        .conflict-banner .text {
+            flex: 1;
+        }
+
+        .conflict-banner .title {
+            font-weight: 600;
+            color: #92400E;
+        }
+
+        .conflict-banner .details {
+            font-size: 0.875rem;
+            color: #A16207;
+        }
+
+        /* 表单卡片 */
+        .form-card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 1.5rem;
+        }
+
+        .form-card h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr auto;
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-group label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-light);
+        }
+
+        .form-group input {
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-light);
+            transform: translateY(-1px);
+        }
+
+        /* 列表 */
+        .list-card {
+            background: var(--card);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .list-header h3 {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .schedule-count {
+            font-size: 0.875rem;
+            color: var(--text-light);
+        }
+
+        .schedule-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .schedule-item {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr auto auto;
+            gap: 1rem;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.2s;
+        }
+
+        .schedule-item:last-child {
+            border-bottom: none;
+        }
+
+        .schedule-item:hover {
+            background: #F9FAFB;
+        }
+
+        .schedule-item.conflict {
+            background: #FEF2F2;
+            border-left: 4px solid var(--danger);
+        }
+
+        .schedule-item.editing {
+            background: #EEF2FF;
+            border-left: 4px solid var(--primary);
+        }
+
+        .item-name {
+            font-weight: 500;
+        }
+
+        .item-time {
+            font-size: 0.875rem;
+            color: var(--text-light);
+        }
+
+        .time-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.35rem 0.75rem;
+            background: #F3F4F6;
+            border-radius: 6px;
+            font-size: 0.875rem;
+        }
+
+        .time-badge.start {
+            color: var(--primary);
+        }
+
+        .time-badge.end {
+            color: var(--success);
+        }
+
+        .conflict-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.35rem 0.75rem;
+            background: var(--danger);
+            color: white;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .btn-edit {
+            background: #EEF2FF;
+            color: var(--primary);
+        }
+
+        .btn-edit:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-delete {
+            background: #FEE2E2;
+            color: var(--danger);
+        }
+
+        .btn-delete:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-save {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-cancel {
+            background: #F3F4F6;
+            color: var(--text-light);
+        }
+
+        /* 空状态 */
+        .empty-state {
+            padding: 3rem;
+            text-align: center;
+            color: var(--text-light);
+        }
+
+        .empty-state .icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        /* 加载状态 */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            color: var(--text-light);
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 0.75rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .schedule-item {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+
+            .item-time {
+                display: flex;
+                gap: 0.5rem;
+            }
+        }
+
+        /* Toast 提示 */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            background: var(--text);
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            background: var(--success);
+        }
+
+        .toast.error {
+            background: var(--danger);
+        }
+
+        /* 数据库配置提示 */
+        .config-notice {
+            background: #FEF3C7;
+            border: 1px solid #F59E0B;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.875rem;
+            color: #92400E;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .config-notice.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📅 日程管理器</h1>
+            <p>管理您的时间，自动检测冲突</p>
+        </div>
+
+        <!-- 数据库配置提示 -->
+        <div class="config-notice" id="configNotice">
+            <span>⚠️</span>
+            <span>请在代码中配置 Supabase 连接信息（SUPABASE_URL 和 SUPABASE_ANON_KEY）后使用云端存储，否则数据仅保存在本地浏览器。</span>
+        </div>
+
+        <!-- 冲突警告 -->
+        <div class="conflict-banner" id="conflictBanner">
+            <span class="icon">⚠️</span>
+            <div class="text">
+                <div class="title">检测到时间冲突</div>
+                <div class="details" id="conflictDetails"></div>
+            </div>
+        </div>
+
+        <!-- 添加/编辑表单 -->
+        <div class="form-card">
+            <h3 id="formTitle">📝 添加新日程</h3>
+            <form class="form-grid" id="scheduleForm">
+                <div class="form-group">
+                    <label>项目名称</label>
+                    <input type="text" id="nameInput" placeholder="输入日程名称" required>
+                </div>
+                <div class="form-group">
+                    <label>起点时间</label>
+                    <input type="datetime-local" id="startInput" required>
+                </div>
+                <div class="form-group">
+                    <label>终点时间</label>
+                    <input type="datetime-local" id="endInput" required>
+                </div>
+                <button type="submit" class="btn btn-primary" id="submitBtn">添加</button>
+            </form>
+        </div>
+
+        <!-- 日程列表 -->
+        <div class="list-card">
+            <div class="list-header">
+                <h3>📋 日程列表</h3>
+                <span class="schedule-count" id="scheduleCount">共 0 项</span>
+            </div>
+            <div class="schedule-list" id="scheduleList">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    加载中...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ============== Supabase 配置 ==============
+        // 请替换为您自己的 Supabase 配置
+        // 可以在 https://supabase.com 创建一个免费项目获取这些信息
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+
+        let supabase = null;
+        let useLocalStorage = true;
+
+        // 尝试初始化 Supabase
+        if (SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY') {
+            try {
+                supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                document.getElementById('configNotice').classList.add('hidden');
+                useLocalStorage = false;
+            } catch (e) {
+                console.log('Supabase 初始化失败，使用本地存储');
+            }
+        }
+
+        // ============== 状态管理 ==============
+        let schedules = [];
+        let editingId = null;
+        let editData = { name: '', start_time: '', end_time: '' };
+
+        // ============== DOM 元素 ==============
+        const form = document.getElementById('scheduleForm');
+        const nameInput = document.getElementById('nameInput');
+        const startInput = document.getElementById('startInput');
+        const endInput = document.getElementById('endInput');
+        const scheduleList = document.getElementById('scheduleList');
+        const scheduleCount = document.getElementById('scheduleCount');
+        const conflictBanner = document.getElementById('conflictBanner');
+        const conflictDetails = document.getElementById('conflictDetails');
+        const toast = document.getElementById('toast');
+
+        // ============== 数据库操作 ==============
+
+        // 获取所有日程
+        async function fetchSchedules() {
+            if (!useLocalStorage && supabase) {
+                try {
+                    const { data, error } = await supabase
+                        .from('schedules')
+                        .select('*')
+                        .order('start_time', { ascending: true });
+
+                    if (error) throw error;
+                    schedules = data || [];
+                } catch (error) {
+                    console.error('获取日程失败:', error);
+                    loadFromLocalStorage();
+                }
+            } else {
+                loadFromLocalStorage();
+            }
+            renderSchedules();
+        }
+
+        // 添加日程
+        async function addSchedule(name, startTime, endTime) {
+            const newSchedule = {
+                id: Date.now(),
+                name,
+                start_time: startTime,
+                end_time: endTime
+            };
+
+            if (!useLocalStorage && supabase) {
+                try {
+                    const { data, error } = await supabase
+                        .from('schedules')
+                        .insert([{
+                            name,
+                            start_time: startTime,
+                            end_time: endTime
+                        }])
+                        .select()
+                        .single();
+
+                    if (!error && data) {
+                        newSchedule.id = data.id;
+                    }
+                } catch (error) {
+                    console.log('Supabase 插入失败，使用本地存储');
+                }
+            }
+
+            schedules.push(newSchedule);
+            sortSchedules();
+            renderSchedules();
+            saveToLocalStorage();
+            showToast('日程添加成功', 'success');
+        }
+
+        // 更新日程
+        async function updateSchedule(id, name, startTime, endTime) {
+            if (!useLocalStorage && supabase) {
+                try {
+                    await supabase
+                        .from('schedules')
+                        .update({
+                            name,
+                            start_time: startTime,
+                            end_time: endTime
+                        })
+                        .eq('id', id);
+                } catch (error) {
+                    console.log('Supabase 更新失败');
+                }
+            }
+
+            const index = schedules.findIndex(s => s.id === id);
+            if (index !== -1) {
+                schedules[index] = { ...schedules[index], name, start_time: startTime, end_time: endTime };
+            }
+            sortSchedules();
+            renderSchedules();
+            saveToLocalStorage();
+            showToast('日程更新成功', 'success');
+        }
+
+        // 删除日程
+        async function deleteSchedule(id) {
+            if (!useLocalStorage && supabase) {
+                try {
+                    await supabase
+                        .from('schedules')
+                        .delete()
+                        .eq('id', id);
+                } catch (error) {
+                    console.log('Supabase 删除失败');
+                }
+            }
+
+            schedules = schedules.filter(s => s.id !== id);
+            renderSchedules();
+            saveToLocalStorage();
+            showToast('日程已删除', 'success');
+        }
+
+        // ============== 本地存储 ==============
+        function saveToLocalStorage() {
+            localStorage.setItem('schedules', JSON.stringify(schedules));
+        }
+
+        function loadFromLocalStorage() {
+            const stored = localStorage.getItem('schedules');
+            if (stored) {
+                schedules = JSON.parse(stored);
+            }
+        }
+
+        // ============== 时间冲突检测 ==============
+        function detectConflicts() {
+            const conflicts = [];
+            const sorted = [...schedules].sort((a, b) =>
+                new Date(a.start_time) - new Date(b.start_time)
+            );
+
+            for (let i = 0; i < sorted.length; i++) {
+                for (let j = i + 1; j < sorted.length; j++) {
+                    const a = sorted[i];
+                    const b = sorted[j];
+
+                    const aStart = new Date(a.start_time);
+                    const aEnd = new Date(a.end_time);
+                    const bStart = new Date(b.start_time);
+                    const bEnd = new Date(b.end_time);
+
+                    // 检查时间重叠
+                    if (aStart < bEnd && bStart < aEnd) {
+                        conflicts.push({ item1: a, item2: b });
+                    }
+                }
+            }
+
+            return conflicts;
+        }
+
+        function isItemInConflict(item) {
+            const conflicts = detectConflicts();
+            return conflicts.some(c => c.item1.id === item.id || c.item2.id === item.id);
+        }
+
+        function formatConflictDetails(conflicts) {
+            return conflicts.map(c =>
+                `"${c.item1.name}" 与 "${c.item2.name}" 时间重叠`
+            ).join('；');
+        }
+
+        // ============== 渲染 ==============
+        function sortSchedules() {
+            schedules.sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+        }
+
+        function renderSchedules() {
+            const conflicts = detectConflicts();
+
+            // 更新冲突警告
+            if (conflicts.length > 0) {
+                conflictBanner.classList.add('show');
+                conflictDetails.textContent = formatConflictDetails(conflicts);
+            } else {
+                conflictBanner.classList.remove('show');
+            }
+
+            // 更新计数
+            scheduleCount.textContent = `共 ${schedules.length} 项`;
+
+            // 渲染列表
+            if (schedules.length === 0) {
+                scheduleList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📭</div>
+                        <p>暂无日程安排</p>
+                        <p style="font-size: 0.875rem; margin-top: 0.5rem;">点击上方表单添加新日程</p>
+                    </div>
+                `;
+                return;
+            }
+
+            scheduleList.innerHTML = schedules.map(item => {
+                const hasConflict = isItemInConflict(item);
+                const isEditing = editingId === item.id;
+
+                return `
+                    <div class="schedule-item ${hasConflict ? 'conflict' : ''} ${isEditing ? 'editing' : ''}" data-id="${item.id}">
+                        ${isEditing ? `
+                            <div style="grid-column: 1 / -1;">
+                                <input type="text" value="${editData.name}"
+                                    style="width: 100%; padding: 0.5rem; border: 1px solid var(--primary); border-radius: 6px; margin-bottom: 0.5rem;"
+                                    onchange="editData.name = this.value">
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <input type="datetime-local" value="${editData.start_time}" style="flex: 1; padding: 0.5rem;"
+                                        onchange="editData.start_time = this.value">
+                                    <input type="datetime-local" value="${editData.end_time}" style="flex: 1; padding: 0.5rem;"
+                                        onchange="editData.end_time = this.value">
+                                </div>
+                            </div>
+                            <div class="item-actions" style="grid-column: 1 / -1; justify-content: flex-end; margin-top: 0.5rem;">
+                                <button class="btn-icon btn-save" onclick="saveEdit(${item.id})">✓ 保存</button>
+                                <button class="btn-icon btn-cancel" onclick="cancelEdit()">✕ 取消</button>
+                            </div>
+                        ` : `
+                            <div class="item-name">${item.name}</div>
+                            <div class="item-time">
+                                <span class="time-badge start">🕐 ${formatTime(item.start_time)}</span>
+                            </div>
+                            <div class="item-time">
+                                <span class="time-badge end">🏁 ${formatTime(item.end_time)}</span>
+                            </div>
+                            ${hasConflict ? '<div class="conflict-tag">⚠️ 冲突</div>' : '<div></div>'}
+                            <div class="item-actions">
+                                <button class="btn-icon btn-edit" onclick="startEdit(${item.id})" title="编辑">✏️</button>
+                                <button class="btn-icon btn-delete" onclick="confirmDelete(${item.id})" title="删除">🗑️</button>
+                            </div>
+                        `}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function formatTime(datetime) {
+            const date = new Date(datetime);
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${month}/${day} ${hours}:${minutes}`;
+        }
+
+        // ============== 编辑功能 ==============
+        function startEdit(id) {
+            editingId = id;
+            const item = schedules.find(s => s.id === id);
+            if (item) {
+                editData = { name: item.name, start_time: item.start_time, end_time: item.end_time };
+            }
+            renderSchedules();
+        }
+
+        async function saveEdit(id) {
+            if (!editData.name || !editData.start_time || !editData.end_time) {
+                showToast('请填写完整信息', 'error');
+                return;
+            }
+
+            if (new Date(editData.end_time) <= new Date(editData.start_time)) {
+                showToast('结束时间必须晚于开始时间', 'error');
+                return;
+            }
+
+            await updateSchedule(id, editData.name, editData.start_time, editData.end_time);
+            editingId = null;
+        }
+
+        function cancelEdit() {
+            editingId = null;
+            renderSchedules();
+        }
+
+        async function confirmDelete(id) {
+            if (confirm('确定要删除这个日程吗？')) {
+                await deleteSchedule(id);
+            }
+        }
+
+        // ============== 表单提交 ==============
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const name = nameInput.value.trim();
+            const startTime = startInput.value;
+            const endTime = endInput.value;
+
+            if (!name || !startTime || !endTime) {
+                showToast('请填写完整信息', 'error');
+                return;
+            }
+
+            if (new Date(endTime) <= new Date(startTime)) {
+                showToast('结束时间必须晚于开始时间', 'error');
+                return;
+            }
+
+            await addSchedule(name, startTime, endTime);
+
+            // 重置表单
+            nameInput.value = '';
+            // 保持时间输入，方便连续添加
+            const now = new Date();
+            const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+            const twoHoursLater = new Date(now.getTime() + 120 * 60 * 1000);
+            startInput.value = formatDateTime(oneHourLater);
+            endInput.value = formatDateTime(twoHoursLater);
+            nameInput.focus();
+        });
+
+        // ============== Toast 提示 ==============
+        function showToast(message, type = '') {
+            toast.textContent = message;
+            toast.className = 'toast show ' + type;
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // ============== 工具函数 ==============
+        function formatDateTime(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        }
+
+        // ============== 初始化 ==============
+        async function init() {
+            await fetchSchedules();
+
+            // 设置默认时间（当前时间 + 1小时 到 + 2小时）
+            const now = new Date();
+            const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+            const twoHoursLater = new Date(now.getTime() + 120 * 60 * 1000);
+
+            startInput.value = formatDateTime(oneHourLater);
+            endInput.value = formatDateTime(twoHoursLater);
+        }
+
+        init();
+    </script>
+</body>
+</html>

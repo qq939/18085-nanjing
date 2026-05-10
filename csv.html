@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>旅行攻略 CSV 数据</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-cream: #FDF8F3;
+            --bg-card: #FFFFFF;
+            --primary-pink: #FF6B6B;
+            --secondary-peach: #FFB88C;
+            --accent-orange: #FF9F43;
+            --text-dark: #2D3436;
+            --text-gray: #636E72;
+            --shadow-soft: 0 8px 30px rgba(255, 107, 107, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: var(--bg-cream);
+            color: var(--text-dark);
+            min-height: 100vh;
+        }
+
+        .font-cute {
+            font-family: 'ZCOOL KuaiLe', cursive;
+        }
+
+        /* 导航栏 */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            padding: 0 2rem;
+        }
+
+        .navbar-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 60px;
+        }
+
+        .navbar-brand {
+            font-family: 'ZCOOL KuaiLe', cursive;
+            font-size: 1.5rem;
+            color: var(--primary-pink);
+            text-decoration: none;
+        }
+
+        .navbar-nav {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.2rem;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn-home {
+            background: #f0f0f0;
+            color: var(--text-dark);
+        }
+
+        .nav-btn-home:hover {
+            background: #e0e0e0;
+        }
+
+        .nav-btn-csv {
+            background: linear-gradient(135deg, var(--primary-pink), var(--accent-orange));
+            color: white;
+        }
+
+        .nav-btn-csv:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 107, 107, 0.4);
+        }
+
+        .nav-btn-ai {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .nav-btn-ai:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        /* 主容器 */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 100px 1.5rem 3rem;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .page-header h1 {
+            font-size: 2.5rem;
+            color: var(--text-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .page-header p {
+            color: var(--text-gray);
+            font-size: 1.1rem;
+        }
+
+        /* CSV 数据展示 */
+        .csv-section {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: var(--shadow-soft);
+            margin-bottom: 2rem;
+        }
+
+        .csv-section h2 {
+            font-size: 1.5rem;
+            color: var(--primary-pink);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .csv-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+
+        .csv-table th {
+            background: linear-gradient(135deg, var(--primary-pink), var(--accent-orange));
+            color: white;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .csv-table td {
+            padding: 0.8rem 1rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .csv-table tr:hover {
+            background: #FFF5F5;
+        }
+
+        .csv-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* 下载按钮 */
+        .download-section {
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, var(--primary-pink), var(--accent-orange));
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(255, 107, 107, 0.4);
+        }
+
+        /* 原始 CSV 展示 */
+        .csv-raw {
+            background: #2D3436;
+            color: #DFE6E9;
+            padding: 1.5rem;
+            border-radius: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            white-space: pre;
+            line-height: 1.6;
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 0 1rem;
+            }
+
+            .navbar-brand {
+                font-size: 1.2rem;
+            }
+
+            .nav-btn {
+                padding: 0.5rem 0.8rem;
+                font-size: 0.8rem;
+            }
+
+            .container {
+                padding: 80px 1rem 2rem;
+            }
+
+            .page-header h1 {
+                font-size: 1.8rem;
+            }
+
+            .csv-table {
+                font-size: 0.85rem;
+            }
+
+            .csv-table th, .csv-table td {
+                padding: 0.6rem 0.5rem;
+            }
+        }
+
+        /* 动画 */
+        .fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-inner">
+            <a href="./" class="navbar-brand">大同→太原→南京</a>
+            <div class="navbar-nav">
+                <a href="./csv" class="nav-btn nav-btn-csv">
+                    <span>📊</span> CSV
+                </a>
+                <a href="./ai-assistant" class="nav-btn nav-btn-ai">
+                    <span>🤖</span> AI助手
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header fade-in">
+            <h1 class="font-cute">📊 旅行攻略数据</h1>
+            <p>大同 → 太原 → 南京 完整行程数据表</p>
+        </div>
+
+        <!-- 交通信息 -->
+        <div class="csv-section fade-in">
+            <h2>🚄 交通信息</h2>
+            <table class="csv-table">
+                <thead>
+                    <tr>
+                        <th>路线</th>
+                        <th>出发站</th>
+                        <th>到达站</th>
+                        <th>时长</th>
+                        <th>价格区间</th>
+                        <th>交通类型</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>大同 → 太原</td>
+                        <td>大同南</td>
+                        <td>太原南</td>
+                        <td>2.5小时</td>
+                        <td>¥150-180</td>
+                        <td>高铁</td>
+                    </tr>
+                    <tr>
+                        <td>太原 → 南京</td>
+                        <td>太原南</td>
+                        <td>南京南</td>
+                        <td>5小时</td>
+                        <td>¥400-450</td>
+                        <td>高铁</td>
+                    </tr>
+                    <tr>
+                        <td>南京 → 大同</td>
+                        <td>南京南</td>
+                        <td>大同南</td>
+                        <td>6.5小时</td>
+                        <td>¥500-550</td>
+                        <td>高铁</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 大同景点 -->
+        <div class="csv-section fade-in">
+            <h2>🏛️ 大同景点</h2>
+            <table class="csv-table">
+                <thead>
+                    <tr>
+                        <th>景点名称</th>
+                        <th>类型</th>
+                        <th>游览时长</th>
+                        <th>门票价格</th>
+                        <th>推荐指数</th>
+                        <th>描述</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>云冈石窟</td>
+                        <td>景点</td>
+                        <td>3-4小时</td>
+                        <td>¥120</td>
+                        <td>⭐⭐⭐⭐⭐</td>
+                        <td>中国四大石窟之一，绵延1公里的雕刻艺术震撼人心</td>
+                    </tr>
+                    <tr>
+                        <td>大同古城墙</td>
+                        <td>景点</td>
+                        <td>2小时</td>
+                        <td>免费</td>
+                        <td>⭐⭐⭐⭐</td>
+                        <td>骑行城墙，俯瞰古城全貌，日落时分金光洒满城墙</td>
+                    </tr>
+                    <tr>
+                        <td>大同美食街</td>
+                        <td>美食</td>
+                        <td>晚上</td>
+                        <td>¥50-80</td>
+                        <td>⭐⭐⭐⭐⭐</td>
+                        <td>刀削面、羊杂碎、凉粉...推荐「凤临阁」百年老店</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 太原景点 -->
+        <div class="csv-section fade-in">
+            <h2>🏔️ 太原景点</h2>
+            <table class="csv-table">
+                <thead>
+                    <tr>
+                        <th>景点名称</th>
+                        <th>类型</th>
+                        <th>游览时长</th>
+                        <th>门票价格</th>
+                        <th>推荐指数</th>
+                        <th>描述</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>晋祠</td>
+                        <td>景点</td>
+                        <td>2-3小时</td>
+                        <td>¥80</td>
+                        <td>⭐⭐⭐⭐⭐</td>
+                        <td>「不到晋祠，枉来太原」宋代建筑精华，「晋祠三绝」令人惊叹</td>
+                    </tr>
+                    <tr>
+                        <td>蒙山大佛</td>
+                        <td>景点</td>
+                        <td>3小时</td>
+                        <td>¥70</td>
+                        <td>⭐⭐⭐⭐</td>
+                        <td>比乐山大佛还早100多年的巨型佛像，藏在山野间的奇迹</td>
+                    </tr>
+                    <tr>
+                        <td>柳巷步行街</td>
+                        <td>购物</td>
+                        <td>晚上</td>
+                        <td>自由</td>
+                        <td>⭐⭐⭐⭐</td>
+                        <td>太原最繁华的商业街，尝尝「老鼠窟」元宵和山西老醋冰淇淋</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 南京景点 -->
+        <div class="csv-section fade-in">
+            <h2>🌸 南京景点</h2>
+            <table class="csv-table">
+                <thead>
+                    <tr>
+                        <th>景点名称</th>
+                        <th>类型</th>
+                        <th>游览时长</th>
+                        <th>门票价格</th>
+                        <th>推荐指数</th>
+                        <th>描述</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>鸡鸣寺</td>
+                        <td>景点</td>
+                        <td>1-2小时</td>
+                        <td>¥15</td>
+                        <td>⭐⭐⭐⭐⭐</td>
+                        <td>「南朝四百八十寺」之首，樱花季美到窒息，斋面一定要尝尝</td>
+                    </tr>
+                    <tr>
+                        <td>玄武湖</td>
+                        <td>景点</td>
+                        <td>3小时</td>
+                        <td>免费</td>
+                        <td>⭐⭐⭐⭐⭐</td>
+                        <td>江南最大的皇家园林湖泊，骑行环湖，看夕阳下的城墙倒影</td>
+                    </tr>
+                    <tr>
+                        <td>南京博物院</td>
+                        <td>景点</td>
+                        <td>3-4小时</td>
+                        <td>免费</td>
+                        <td>⭐⭐⭐⭐⭐</td>
+                        <td>国家一级博物馆，建议提前预约，历史馆+民国馆必逛</td>
+                    </tr>
+                    <tr>
+                        <td>夫子庙 · 老门东</td>
+                        <td>美食</td>
+                        <td>晚上</td>
+                        <td>¥100+</td>
+                        <td>⭐⭐⭐⭐⭐</td>
+                        <td>秦淮河畔品美食，鸭血粉丝汤、盐水鸭、桂花糕...吃到扶墙</td>
+                    </tr>
+                    <tr>
+                        <td>梧桐大道</td>
+                        <td>景点</td>
+                        <td>1小时</td>
+                        <td>免费</td>
+                        <td>⭐⭐⭐⭐</td>
+                        <td>中山陵景区的「最美梧桐隧道」，民国风情满满，拍照圣地</td>
+                    </tr>
+                    <tr>
+                        <td>中山陵</td>
+                        <td>景点</td>
+                        <td>2-3小时</td>
+                        <td>免费</td>
+                        <td>⭐⭐⭐⭐⭐</td>
+                        <td>「天下为公」的气魄，392级台阶登顶眺望，整个南京城尽收眼底</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 酒店推荐 -->
+        <div class="csv-section fade-in">
+            <h2>🏨 酒店推荐</h2>
+            <table class="csv-table">
+                <thead>
+                    <tr>
+                        <th>酒店名称</th>
+                        <th>城市</th>
+                        <th>位置</th>
+                        <th>价格/晚</th>
+                        <th>星级</th>
+                        <th>特色标签</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>大同云冈酒店</td>
+                        <td>大同</td>
+                        <td>大同市城区，距云冈石窟20分钟</td>
+                        <td>¥380</td>
+                        <td>★★★★</td>
+                        <td>含早、免费停车、景观房</td>
+                    </tr>
+                    <tr>
+                        <td>太原铜锣湾希尔顿</td>
+                        <td>太原</td>
+                        <td>太原迎泽区，步行街旁</td>
+                        <td>¥550</td>
+                        <td>★★★★★</td>
+                        <td>五星、地铁直达、健身房</td>
+                    </tr>
+                    <tr>
+                        <td>南京金陵饭店</td>
+                        <td>南京</td>
+                        <td>南京市中心，新街口</td>
+                        <td>¥680</td>
+                        <td>★★★★★</td>
+                        <td>历史地标、秦淮河畔、必打卡</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 每日行程 -->
+        <div class="csv-section fade-in">
+            <h2>📅 每日行程</h2>
+            <table class="csv-table">
+                <thead>
+                    <tr>
+                        <th>天数</th>
+                        <th>城市</th>
+                        <th>主题</th>
+                        <th>上午</th>
+                        <th>下午</th>
+                        <th>晚上</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Day 1</td>
+                        <td>大同</td>
+                        <td>抵达云冈，品味古城</td>
+                        <td>抵达大同，入住酒店</td>
+                        <td>云冈石窟（3-4小时）</td>
+                        <td>古城墙骑行 + 凤临阁晚餐</td>
+                    </tr>
+                    <tr>
+                        <td>Day 2</td>
+                        <td>太原</td>
+                        <td>晋祠古韵，中转休整</td>
+                        <td>大同→太原（2.5h）</td>
+                        <td>晋祠（2-3小时）</td>
+                        <td>柳巷漫步 + 晚餐</td>
+                    </tr>
+                    <tr>
+                        <td>Day 3</td>
+                        <td>南京</td>
+                        <td>六朝金粉，秦淮风月</td>
+                        <td>太原→南京（5h）</td>
+                        <td>鸡鸣寺 + 玄武湖</td>
+                        <td>夫子庙赏灯，秦淮河夜游</td>
+                    </tr>
+                    <tr>
+                        <td>Day 4</td>
+                        <td>南京</td>
+                        <td>民国风情，历史印记</td>
+                        <td>南京博物院（3-4小时）</td>
+                        <td>梧桐大道 + 中山陵</td>
+                        <td>老门东觅食</td>
+                    </tr>
+                    <tr>
+                        <td>Day 5</td>
+                        <td>返程</td>
+                        <td>满载回忆，踏上归途</td>
+                        <td>自由活动（可去总统府）</td>
+                        <td>南京→大同（6.5h）</td>
+                        <td>抵达大同，结束旅程</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 预算汇总 -->
+        <div class="csv-section fade-in">
+            <h2>💰 预算汇总</h2>
+            <table class="csv-table">
+                <thead>
+                    <tr>
+                        <th>项目</th>
+                        <th>明细</th>
+                        <th>金额</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>交通（大同→太原）</td>
+                        <td>高铁</td>
+                        <td>¥150-180</td>
+                    </tr>
+                    <tr>
+                        <td>交通（太原→南京）</td>
+                        <td>高铁</td>
+                        <td>¥400-450</td>
+                    </tr>
+                    <tr>
+                        <td>交通（南京→大同）</td>
+                        <td>高铁</td>
+                        <td>¥500-550</td>
+                    </tr>
+                    <tr>
+                        <td>景点门票</td>
+                        <td>云冈石窟、晋祠等</td>
+                        <td>约¥500</td>
+                    </tr>
+                    <tr>
+                        <td>餐饮</td>
+                        <td>5天当地美食</td>
+                        <td>约¥600</td>
+                    </tr>
+                    <tr>
+                        <td>住宿</td>
+                        <td>4晚酒店</td>
+                        <td>约¥2000</td>
+                    </tr>
+                    <tr style="background: #FFF5F5; font-weight: 700;">
+                        <td colspan="2">总计预算</td>
+                        <td style="color: var(--primary-pink);">约 ¥2800</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 原始 CSV 数据 -->
+        <div class="csv-section fade-in">
+            <h2>📄 原始 CSV 数据</h2>
+            <div class="csv-raw">路线,出发站,到达站,时长,价格,类型
+大同 → 太原,大同南,太原南,2.5小时,¥150-180,高铁
+太原 → 南京,太原南,南京南,5小时,¥400-450,高铁
+南京 → 大同,南京南,大同南,6.5小时,¥500-550,高铁
+
+城市,景点名称,游览时长,门票价格,推荐指数,描述
+大同,云冈石窟,3-4小时,¥120,⭐⭐⭐⭐⭐,中国四大石窟之一，绵延1公里的雕刻艺术震撼人心
+大同,大同古城墙,2小时,免费,⭐⭐⭐⭐,骑行城墙，俯瞰古城全貌，日落时分金光洒满城墙
+大同,大同美食街,晚上,¥50-80,⭐⭐⭐⭐⭐,刀削面、羊杂碎、凉粉...推荐「凤临阁」百年老店
+太原,晋祠,2-3小时,¥80,⭐⭐⭐⭐⭐,「不到晋祠，枉来太原」宋代建筑精华
+太原,蒙山大佛,3小时,¥70,⭐⭐⭐⭐,比乐山大佛还早100多年的巨型佛像
+太原,柳巷步行街,晚上,自由,⭐⭐⭐⭐,太原最繁华的商业街
+南京,鸡鸣寺,1-2小时,¥15,⭐⭐⭐⭐⭐,「南朝四百八十寺」之首
+南京,玄武湖,3小时,免费,⭐⭐⭐⭐⭐,江南最大的皇家园林湖泊
+南京,南京博物院,3-4小时,免费,⭐⭐⭐⭐⭐,国家一级博物馆
+南京,夫子庙·老门东,晚上,¥100+,⭐⭐⭐⭐⭐,秦淮河畔品美食
+南京,梧桐大道,1小时,免费,⭐⭐⭐⭐,中山陵景区最美梧桐隧道
+南京,中山陵,2-3小时,免费,⭐⭐⭐⭐⭐,「天下为公」的气魄
+
+酒店名称,城市,位置,价格/晚,星级,特色标签
+大同云冈酒店,大同,大同市城区，距云冈石窟20分钟,¥380,★★★★,含早|免费停车|景观房
+太原铜锣湾希尔顿,太原,太原迎泽区，步行街旁,¥550,★★★★★,五星|地铁直达|健身房
+南京金陵饭店,南京,南京市中心，新街口,¥680,★★★★★,历史地标|秦淮河畔|必打卡
+
+天数,城市,主题,上午,下午,晚上
+Day 1,大同,抵达云冈，品味古城,抵达大同，入住酒店,云冈石窟（3-4小时）,古城墙骑行 + 凤临阁晚餐
+Day 2,太原,晋祠古韵，中转休整,大同→太原（2.5h）,晋祠（2-3小时）,柳巷漫步 + 晚餐
+Day 3,南京,六朝金粉，秦淮风月,太原→南京（5h）,鸡鸣寺 + 玄武湖,夫子庙赏灯，秦淮河夜游
+Day 4,南京,民国风情，历史印记,南京博物院（3-4小时）,梧桐大道 + 中山陵,老门东觅食
+Day 5,返程,满载回忆，踏上归途,自由活动（可去总统府）,南京→大同（6.5h）,抵达大同，结束旅程</div>
+        </div>
+
+        <div class="download-section fade-in">
+            <a href="data:text/csv;charset=utf-8,%E8%B7%AF%E7%BA%BF%E3%80%81%E5%87%BA%E5%8F%91%E7%AB%99%E3%80%81%E5%88%B0%E8%BE%BE%E7%AB%99%E3%80%81%E6%97%B6%E9%95%BF%E3%80%81%E4%BB%B7%E6%A0%BC%E3%80%81%E7%B1%BB%E5%9E%8B%0A%E5%A4%A7%E5%90%8C%E2%86%92%E5%A4%AA%E5%8E%9F%E3%80%81%E5%A4%A7%E5%90%8C%E5%8D%97%E3%80%81%E5%A4%AA%E5%8E%9F%E5%8D%97%E3%80%81%E2.5%E5%B0%8F%E6%97%B6%E3%80%81%C2%A5150-180%E3%80%81%E9%AB%98%E9%93%81%0A%E5%A4%AA%E5%8E%9F%E2%86%92%E5%8D%97%E4%BA%AC%E3%80%81%E5%A4%AA%E5%8E%9F%E5%8D%97%E3%80%81%E5%8D%97%E4%BA%AC%E5%8D%97%E3%80%81%E5%B0%8F%E6%97%B6%E3%80%81%C2%A5400-450%E3%80%81%E9%AB%98%E9%93%81%0A%E5%8D%97%E4%BA%AC%E2%86%92%E5%A4%A7%E5%90%8C%E3%80%81%E5%8D%97%E4%BA%AC%E5%8D%97%E3%80%81%E5%A4%A7%E5%90%8C%E5%8D%97%E3%80%81%E2.5%E5%B0%8F%E6%97%B6%E3%80%81%C2%A5500-550%E3%80%81%E9%AB%98%E9%93%81" download="旅行攻略数据.csv" class="download-btn">
+                <span>📥</span> 下载 CSV 文件
+            </a>
+        </div>
+    </div>
+</body>
+</html>
