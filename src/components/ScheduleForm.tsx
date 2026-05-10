@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { Schedule } from '../types'
 
 interface Props {
@@ -8,16 +8,44 @@ interface Props {
 }
 
 export function ScheduleForm({ schedule, onSubmit, onCancel }: Props) {
-  const [title, setTitle] = useState(schedule?.title || '')
-  const [description, setDescription] = useState(schedule?.description || '')
-  const [startTime, setStartTime] = useState(schedule?.start_time ? new Date(schedule.start_time).toISOString().slice(0, 16) : '')
-  const [endTime, setEndTime] = useState(schedule?.end_time ? new Date(schedule.end_time).toISOString().slice(0, 16) : '')
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [startTime, setStartTime] = useState('')
+  const [endTime, setEndTime] = useState('')
+
+  // 当 schedule 变化时更新表单
+  useEffect(() => {
+    console.log('[ScheduleForm] 更新表单, schedule:', schedule)
+    if (schedule) {
+      setTitle(schedule.title || '')
+      setDescription(schedule.description || '')
+      setStartTime(new Date(schedule.start_time).toISOString().slice(0, 16))
+      setEndTime(new Date(schedule.end_time).toISOString().slice(0, 16))
+    } else {
+      // 重置表单
+      setTitle('')
+      setDescription('')
+      const now = new Date()
+      now.setMinutes(0, 0, 0)
+      const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000)
+      setStartTime(now.toISOString().slice(0, 16))
+      setEndTime(oneHourLater.toISOString().slice(0, 16))
+    }
+  }, [schedule])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    if (!title.trim()) {
+      alert('请输入事项名称')
+      return
+    }
+    if (!startTime || !endTime) {
+      alert('请选择时间')
+      return
+    }
     onSubmit({
-      title,
-      description: description || null,
+      title: title.trim(),
+      description: description.trim() || null,
       start_time: new Date(startTime).toISOString(),
       end_time: new Date(endTime).toISOString(),
     })
@@ -25,7 +53,7 @@ export function ScheduleForm({ schedule, onSubmit, onCancel }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="schedule-form">
-      <h2>{schedule ? '编辑日程' : '添加日程'}</h2>
+      <h2>{schedule ? '📝 编辑日程' : '✨ 添加日程'}</h2>
       
       <div className="form-group">
         <label htmlFor="title">事项名称 *</label>
@@ -73,12 +101,12 @@ export function ScheduleForm({ schedule, onSubmit, onCancel }: Props) {
       </div>
 
       <button type="submit" className="btn btn-primary">
-        {schedule ? '保存修改' : '添加日程'}
+        {schedule ? '💾 保存修改' : '➕ 添加日程'}
       </button>
       
       {schedule && (
         <button type="button" className="btn btn-secondary" onClick={onCancel}>
-          取消编辑
+          ❌ 取消编辑
         </button>
       )}
     </form>

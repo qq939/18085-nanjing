@@ -21,6 +21,7 @@ export default function App() {
   }
 
   const handleSubmit = async (data: Omit<Schedule, 'id' | 'created_at' | 'updated_at'>) => {
+    console.log('[App] handleSubmit, editingSchedule:', editingSchedule, 'data:', data)
     if (editingSchedule) {
       const result = await updateSchedule(editingSchedule.id, data)
       if (result.success) {
