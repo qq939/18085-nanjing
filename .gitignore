@@ -8,3 +8,5 @@ uploads/
 dist/
 build/
 *.pyc
+create_schedule.py
+test_schedule_exists.py
