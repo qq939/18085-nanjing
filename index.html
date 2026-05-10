@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大同 → 太原 → 南京 | 旅行攻略</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-cream: #FDF8F3;
+            --bg-card: #FFFFFF;
+            --primary-pink: #FF6B6B;
+            --secondary-peach: #FFB88C;
+            --accent-orange: #FF9F43;
+            --text-dark: #2D3436;
+            --text-gray: #636E72;
+            --text-light: #B2BEC3;
+            --shadow-soft: 0 8px 30px rgba(255, 107, 107, 0.1);
+            --shadow-hover: 0 15px 40px rgba(255, 107, 107, 0.2);
+            --radius-lg: 20px;
+            --radius-md: 16px;
+            --radius-sm: 12px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: var(--bg-cream);
+            color: var(--text-dark);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .font-cute {
+            font-family: 'ZCOOL KuaiLe', cursive;
+        }
+
+        /* 顶部 Hero 区域 */
+        .hero {
+            position: relative;
+            min-height: 70vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: linear-gradient(135deg, #FFECD2 0%, #FCB69F 50%, #FF9A9E 100%);
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.05;
+        }
+
+        .hero-content {
+            text-align: center;
+            z-index: 2;
+            padding: 2rem;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            color: var(--primary-pink);
+            margin-bottom: 1.5rem;
+            animation: fadeInUp 1s ease-out 0.2s both;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.5rem, 8vw, 4.5rem);
+            font-weight: 700;
+            color: white;
+            text-shadow: 2px 4px 20px rgba(0, 0, 0, 0.15);
+            margin-bottom: 1rem;
+            animation: fadeInUp 1s ease-out 0.4s both;
+        }
+
+        .hero-subtitle {
+            font-size: 1.3rem;
+            color: rgba(255, 255, 255, 0.95);
+            margin-bottom: 2rem;
+            animation: fadeInUp 1s ease-out 0.6s both;
+        }
+
+        .route-flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            animation: fadeInUp 1s ease-out 0.8s both;
+        }
+
+        .route-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+        }
+
+        .route-line {
+            width: 60px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 2px;
+        }
+
+        /* 主容器 */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 3rem 1.5rem;
+        }
+
+        /* 统计卡片 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: -4rem;
+            padding: 0 1rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: var(--shadow-soft);
+            transition: all 0.3s ease;
+            animation: fadeInUp 1s ease-out 1s both;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-pink);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-gray);
+        }
+
+        /* 章节标题 */
+        .section-title {
+            text-align: center;
+            margin: 4rem 0 2rem;
+        }
+
+        .section-title h2 {
+            font-size: 2rem;
+            color: var(--text-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .section-title p {
+            color: var(--text-gray);
+        }
+
+        /* 交通卡片 */
+        .transport-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .transport-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-soft);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .transport-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .transport-header {
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .transport-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .transport-info h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .transport-info span {
+            font-size: 0.85rem;
+            color: var(--text-gray);
+        }
+
+        .transport-detail {
+            padding: 0 1.5rem 1.5rem;
+        }
+
+        .route-item {
+            display: flex;
+            align-items: center;
+            padding: 0.8rem 0;
+            border-bottom: 1px dashed var(--text-light);
+        }
+
+        .route-item:last-child {
+            border-bottom: none;
+        }
+
+        .route-from {
+            flex: 1;
+            text-align: center;
+        }
+
+        .route-arrow {
+            padding: 0 1rem;
+            color: var(--primary-pink);
+        }
+
+        .route-to {
+            flex: 1;
+            text-align: center;
+        }
+
+        .route-label {
+            font-size: 0.75rem;
+            color: var(--text-gray);
+        }
+
+        .route-city {
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .price-tag {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--primary-pink), var(--accent-orange));
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+        }
+
+        /* 城市攻略卡片 */
+        .city-section {
+            margin: 4rem 0;
+        }
+
+        .city-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .city-flag {
+            font-size: 3rem;
+        }
+
+        .city-info h3 {
+            font-size: 1.8rem;
+            color: var(--text-dark);
+        }
+
+        .city-info span {
+            color: var(--text-gray);
+            font-size: 0.95rem;
+        }
+
+        .city-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .spot-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-soft);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .spot-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .spot-image {
+            height: 180px;
+            background: linear-gradient(135deg, var(--secondary-peach), var(--primary-pink));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .spot-image::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(transparent, rgba(255,255,255,0.8));
+        }
+
+        .spot-badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--accent-orange);
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            z-index: 2;
+        }
+
+        .spot-content {
+            padding: 1.5rem;
+        }
+
+        .spot-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .spot-desc {
+            font-size: 0.9rem;
+            color: var(--text-gray);
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .spot-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 1rem;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .spot-time, .spot-cost {
+            font-size: 0.85rem;
+            color: var(--text-gray);
+        }
+
+        .spot-time::before {
+            content: '🕐 ';
+        }
+
+        .spot-cost::before {
+            content: '💰 ';
+        }
+
+        /* 酒店推荐 */
+        .hotel-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .hotel-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-soft);
+            transition: all 0.3s ease;
+        }
+
+        .hotel-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .hotel-image {
+            height: 160px;
+            background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3.5rem;
+        }
+
+        .hotel-content {
+            padding: 1.5rem;
+        }
+
+        .hotel-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .hotel-location {
+            font-size: 0.85rem;
+            color: var(--text-gray);
+            margin-bottom: 0.8rem;
+        }
+
+        .hotel-location::before {
+            content: '📍 ';
+        }
+
+        .hotel-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .hotel-tag {
+            background: #FFF0F5;
+            color: var(--primary-pink);
+            padding: 0.25rem 0.7rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+        }
+
+        .hotel-price {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .price-number {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary-pink);
+        }
+
+        .price-unit {
+            font-size: 0.8rem;
+            color: var(--text-gray);
+        }
+
+        /* 每日行程 */
+        .timeline {
+            position: relative;
+            padding-left: 3rem;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 0.8rem;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(to bottom, var(--primary-pink), var(--secondary-peach));
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-bottom: 2.5rem;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -2.5rem;
+            top: 0;
+            width: 1.2rem;
+            height: 1.2rem;
+            background: var(--primary-pink);
+            border-radius: 50%;
+            border: 3px solid var(--bg-cream);
+        }
+
+        .timeline-date {
+            font-size: 0.85rem;
+            color: var(--primary-pink);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .timeline-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .timeline-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .timeline-content {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .timeline-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.8rem;
+            font-size: 0.95rem;
+            color: var(--text-gray);
+        }
+
+        .timeline-row span:first-child {
+            font-size: 1.2rem;
+        }
+
+        /* 总结卡片 */
+        .summary-card {
+            background: linear-gradient(135deg, #FFECD2 0%, #FCB69F 50%, #FF9A9E 100%);
+            border-radius: var(--radius-lg);
+            padding: 3rem;
+            text-align: center;
+            color: white;
+            margin-top: 4rem;
+        }
+
+        .summary-card h3 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+        }
+
+        .summary-card p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+            line-height: 1.8;
+        }
+
+        .summary-stats {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .summary-stat {
+            text-align: center;
+        }
+
+        .summary-stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        .summary-stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        /* 底部 */
+        .footer {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-gray);
+            font-size: 0.9rem;
+        }
+
+        .footer::before {
+            content: '✨ ';
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .hero {
+                min-height: 60vh;
+            }
+
+            .stats-grid {
+                margin-top: -2rem;
+            }
+
+            .route-flow {
+                flex-direction: column;
+            }
+
+            .route-line {
+                width: 3px;
+                height: 40px;
+            }
+
+            .timeline {
+                padding-left: 2rem;
+            }
+
+            .timeline-item::before {
+                left: -1.8rem;
+            }
+
+            .summary-stats {
+                gap: 2rem;
+            }
+        }
+
+        /* 动画 */
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s ease-out;
+        }
+
+        .animate-on-scroll.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero 区域 -->
+    <section class="hero">
+        <div class="hero-content">
+            <span class="hero-badge">📌 旅行攻略</span>
+            <h1 class="font-cute">从大同到南京</h1>
+            <p class="hero-subtitle">一场跨越半个中国的旅行 | 经停太原</p>
+            <div class="route-flow">
+                <div class="route-dot" style="background: var(--primary-pink); color: white;">🏠<br>大同</div>
+                <div class="route-line"></div>
+                <div class="route-dot" style="background: var(--accent-orange); color: white;">🏛️<br>太原</div>
+                <div class="route-line"></div>
+                <div class="route-dot" style="background: var(--primary-pink); color: white;">🌸<br>南京</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 统计信息 -->
+    <section class="container">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">🚄</div>
+                <div class="stat-number">5</div>
+                <div class="stat-label">天行程</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🏙️</div>
+                <div class="stat-number">3</div>
+                <div class="stat-label">座城市</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📸</div>
+                <div class="stat-number">12</div>
+                <div class="stat-label">个景点</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">💰</div>
+                <div class="stat-number">2800</div>
+                <div class="stat-label">预算(元)</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 交通指南 -->
+    <section class="container">
+        <div class="section-title">
+            <h2 class="font-cute">🚄 交通指南</h2>
+            <p>选择最舒适的方式，开启这段旅程</p>
+        </div>
+
+        <div class="transport-cards">
+            <div class="transport-card">
+                <div class="transport-header">
+                    <div class="transport-icon" style="background: #FFF0F5;">
+                        🚄
+                    </div>
+                    <div class="transport-info">
+                        <h3>大同 → 太原</h3>
+                        <span>高铁约 2.5 小时</span>
+                    </div>
+                </div>
+                <div class="transport-detail">
+                    <div class="route-item">
+                        <div class="route-from">
+                            <div class="route-label">出发</div>
+                            <div class="route-city">大同南</div>
+                        </div>
+                        <div class="route-arrow">→</div>
+                        <div class="route-to">
+                            <div class="route-label">到达</div>
+                            <div class="route-city">太原南</div>
+                        </div>
+                    </div>
+                    <span class="price-tag">💰 ¥150-180</span>
+                </div>
+            </div>
+
+            <div class="transport-card">
+                <div class="transport-header">
+                    <div class="transport-icon" style="background: #E8F5E9;">
+                        🚄
+                    </div>
+                    <div class="transport-info">
+                        <h3>太原 → 南京</h3>
+                        <span>高铁约 5 小时</span>
+                    </div>
+                </div>
+                <div class="transport-detail">
+                    <div class="route-item">
+                        <div class="route-from">
+                            <div class="route-label">出发</div>
+                            <div class="route-city">太原南</div>
+                        </div>
+                        <div class="route-arrow">→</div>
+                        <div class="route-to">
+                            <div class="route-label">到达</div>
+                            <div class="route-city">南京南</div>
+                        </div>
+                    </div>
+                    <span class="price-tag">💰 ¥400-450</span>
+                </div>
+            </div>
+
+            <div class="transport-card">
+                <div class="transport-header">
+                    <div class="transport-icon" style="background: #FFF3E0;">
+                        ✈️
+                    </div>
+                    <div class="transport-info">
+                        <h3>南京 → 大同</h3>
+                        <span>高铁约 6.5 小时</span>
+                    </div>
+                </div>
+                <div class="transport-detail">
+                    <div class="route-item">
+                        <div class="route-from">
+                            <div class="route-label">出发</div>
+                            <div class="route-city">南京南</div>
+                        </div>
+                        <div class="route-arrow">→</div>
+                        <div class="route-to">
+                            <div class="route-label">到达</div>
+                            <div class="route-city">大同南</div>
+                        </div>
+                    </div>
+                    <span class="price-tag">💰 ¥500-550</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 大同景点 -->
+    <section class="container city-section">
+        <div class="city-header">
+            <div class="city-flag">🏛️</div>
+            <div class="city-info">
+                <h3 class="font-cute">大同 · 云冈石窟之城</h3>
+                <span>Day 1 - 北方瑰宝</span>
+            </div>
+        </div>
+
+        <div class="city-grid">
+            <div class="spot-card">
+                <div class="spot-image">
+                    🗿
+                    <span class="spot-badge">必去</span>
+                </div>
+                <div class="spot-content">
+                    <h4 class="spot-title">云冈石窟</h4>
+                    <p class="spot-desc">中国四大石窟之一，绵延1公里的雕刻艺术震撼人心，建议预留3-4小时细细品味。</p>
+                    <div class="spot-meta">
+                        <span class="spot-time">3-4小时</span>
+                        <span class="spot-cost">¥120</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="spot-card">
+                <div class="spot-image" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    🏯
+                </div>
+                <div class="spot-content">
+                    <h4 class="spot-title">大同古城墙</h4>
+                    <p class="spot-desc">骑行城墙，俯瞰古城全貌，日落时分金光洒满城墙，非常出片！</p>
+                    <div class="spot-meta">
+                        <span class="spot-time">2小时</span>
+                        <span class="spot-cost">免费</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="spot-card">
+                <div class="spot-image" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    🍜
+                </div>
+                <div class="spot-content">
+                    <h4 class="spot-title">大同美食街</h4>
+                    <p class="spot-desc">刀削面、羊杂碎、凉粉...地道山西味不容错过！推荐「凤临阁」百年老店。</p>
+                    <div class="spot-meta">
+                        <span class="spot-time">晚上</span>
+                        <span class="spot-cost">¥50-80</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 太原景点 -->
+    <section class="container city-section">
+        <div class="city-header">
+            <div class="city-flag">🏔️</div>
+            <div class="city-info">
+                <h3 class="font-cute">太原 · 晋商故里</h3>
+                <span>Day 2 - 中转停留</span>
+            </div>
+        </div>
+
+        <div class="city-grid">
+            <div class="spot-card">
+                <div class="spot-image" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
+                    🏛️
+                    <span class="spot-badge">世界遗产</span>
+                </div>
+                <div class="spot-content">
+                    <h4 class="spot-title">晋祠</h4>
+                    <p class="spot-desc">「不到晋祠，枉来太原」宋代建筑精华，「晋祠三绝」令人惊叹。</p>
+                    <div class="spot-meta">
+                        <span class="spot-time">2-3小时</span>
+                        <span class="spot-cost">¥80</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="spot-card">
+                <div class="spot-image" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);">
+                    ⛰️
+                </div>
+                <div class="spot-content">
+                    <h4 class="spot-title">蒙山大佛</h4>
+                    <p class="spot-desc">比乐山大佛还早100多年的巨型佛像，藏在山野间的奇迹。</p>
+                    <div class="spot-meta">
+                        <span class="spot-time">3小时</span>
+                        <span class="spot-cost">¥70</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="spot-card">
+                <div class="spot-image" style="background: linear-gradient(135deg, #96fbc4 0%, #f9f586 100%);">
+                    🛍️
+                </div>
+                <div class="spot-content">
+                    <h4 class="spot-title">柳巷步行街</h4>
+                    <p class="spot-desc">太原最繁华的商业街，尝尝「老鼠窟」元宵和山西老醋冰淇淋！</p>
+                    <div class="spot-meta">
+                        <span class="spot-time">晚上</span>
+                        <span class="spot-cost">自由</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 南京景点 -->
+    <section class="container city-section">
+        <div class="city-header">
+            <div class="city-flag">🌸</div>
+            <div class="city-info">
+                <h3 class="font-cute">南京 · 六朝古都</h3>
+                <span>Day 3-5 - 诗意金陵</span>
+            </div>
+        </div>
+
+        <div class="city-grid">
+            <div class="spot-card">
+                <div class="spot-image" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);">
+                    🌸
+                    <span class="spot-badge">必去</span>
+                </div>
+                <div class="spot-content">
+                    <h4 class="spot-title">鸡鸣寺</h4>
+                    <p class="spot-desc">「南朝四百八十寺」之首，樱花季美到窒息，斋面一定要尝尝！</p>
+                    <div class="spot-meta">
+                        <span class="spot-time">1-2小时</span>
+                        <span class="spot-cost">¥15</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="spot-card">
+                <div class="spot-image" style="background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);">
+                    🌉
+                    <span class="spot-badge">绝美</span>
+                </div>
+                <div class="spot-content">
+                    <h4 class="spot-title">玄武湖</h4>
+                    <p class="spot-desc">江南最大的皇家园林湖泊，骑行环湖，看夕阳下的城墙倒影。</p>
+                    <div class="spot-meta">
+                        <span class="spot-time">3小时</span>
+                        <span class="spot-cost">免费</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="spot-card">
+                <div class="spot-image" style="background: linear-gradient(135deg, #d299c2 0%, #fef9d7 100%);">
+                    🏛️
+                </div>
+                <div class="spot-content">
+                    <h4 class="spot-title">南京博物院</h4>
+                    <p class="spot-desc">国家一级博物馆，建议提前预约，历史馆+民国馆必逛！</p>
+                    <div class="spot-meta">
+                        <span class="spot-time">3-4小时</span>
+                        <span class="spot-cost">免费</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="spot-card">
+                <div class="spot-image" style="background: linear-gradient(135deg, #f5af19 0%, #f12711 100%);">
+                    🍜
+                    <span class="spot-badge">美食</span>
+                </div>
+                <div class="spot-content">
+                    <h4 class="spot-title">夫子庙 · 老门东</h4>
+                    <p class="spot-desc">秦淮河畔品美食，鸭血粉丝汤、盐水鸭、桂花糕...吃到扶墙！</p>
+                    <div class="spot-meta">
+                        <span class="spot-time">晚上</span>
+                        <span class="spot-cost">¥100+</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="spot-card">
+                <div class="spot-image" style="background: linear-gradient(135deg, #c471f5 0%, #fa71cd 100%);">
+                    🌳
+                </div>
+                <div class="spot-content">
+                    <h4 class="spot-title">梧桐大道</h4>
+                    <p class="spot-desc">中山陵景区的「最美梧桐隧道」，民国风情满满，拍照圣地！</p>
+                    <div class="spot-meta">
+                        <span class="spot-time">1小时</span>
+                        <span class="spot-cost">免费</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="spot-card">
+                <div class="spot-image" style="background: linear-gradient(135deg, #8fbc8f 0%, #deb887 100%);">
+                    🏡
+                </div>
+                <div class="spot-content">
+                    <h4 class="spot-title">中山陵</h4>
+                    <p class="spot-desc">「天下为公」的气魄，392级台阶登顶眺望，整个南京城尽收眼底。</p>
+                    <div class="spot-meta">
+                        <span class="spot-time">2-3小时</span>
+                        <span class="spot-cost">免费</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 酒店推荐 -->
+    <section class="container">
+        <div class="section-title">
+            <h2 class="font-cute">🏨 酒店推荐</h2>
+            <p>舒适住宿，旅途加分</p>
+        </div>
+
+        <div class="hotel-grid">
+            <div class="hotel-card">
+                <div class="hotel-image">🏨</div>
+                <div class="hotel-content">
+                    <h4 class="hotel-name">大同云冈酒店</h4>
+                    <p class="hotel-location">大同市城区，距云冈石窟20分钟</p>
+                    <div class="hotel-tags">
+                        <span class="hotel-tag">含早</span>
+                        <span class="hotel-tag">免费停车</span>
+                        <span class="hotel-tag">景观房</span>
+                    </div>
+                    <div class="hotel-price">
+                        <div>
+                            <span class="price-number">¥380</span>
+                            <span class="price-unit">/晚</span>
+                        </div>
+                        <span style="color: var(--primary-pink);">★★★★</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hotel-card">
+                <div class="hotel-image" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);">🏨</div>
+                <div class="hotel-content">
+                    <h4 class="hotel-name">太原铜锣湾希尔顿</h4>
+                    <p class="hotel-location">太原迎泽区，步行街旁</p>
+                    <div class="hotel-tags">
+                        <span class="hotel-tag">五星</span>
+                        <span class="hotel-tag">地铁直达</span>
+                        <span class="hotel-tag">健身房</span>
+                    </div>
+                    <div class="hotel-price">
+                        <div>
+                            <span class="price-number">¥550</span>
+                            <span class="price-unit">/晚</span>
+                        </div>
+                        <span style="color: var(--primary-pink);">★★★★★</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hotel-card">
+                <div class="hotel-image" style="background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);">🏨</div>
+                <div class="hotel-content">
+                    <h4 class="hotel-name">南京金陵饭店</h4>
+                    <p class="hotel-location">南京市中心，新街口</p>
+                    <div class="hotel-tags">
+                        <span class="hotel-tag">历史地标</span>
+                        <span class="hotel-tag">秦淮河畔</span>
+                        <span class="hotel-tag">必打卡</span>
+                    </div>
+                    <div class="hotel-price">
+                        <div>
+                            <span class="price-number">¥680</span>
+                            <span class="price-unit">/晚</span>
+                        </div>
+                        <span style="color: var(--primary-pink);">★★★★★</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 每日行程 -->
+    <section class="container">
+        <div class="section-title">
+            <h2 class="font-cute">📅 每日行程</h2>
+            <p>贴心安排，不走回头路</p>
+        </div>
+
+        <div class="timeline">
+            <div class="timeline-item">
+                <div class="timeline-date">Day 1 · 大同</div>
+                <div class="timeline-card">
+                    <h4 class="timeline-title">🏛️ 抵达云冈，品味古城</h4>
+                    <div class="timeline-content">
+                        <div class="timeline-row"><span>🚄</span> 抵达大同，入住酒店</div>
+                        <div class="timeline-row"><span>🗿</span> 下午：云冈石窟（3-4小时）</div>
+                        <div class="timeline-row"><span>🌙</span> 晚上：古城墙骑行 + 凤临阁晚餐</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="timeline-item">
+                <div class="timeline-date">Day 2 · 太原</div>
+                <div class="timeline-card">
+                    <h4 class="timeline-title">🏔️ 晋祠古韵，中转休整</h4>
+                    <div class="timeline-content">
+                        <div class="timeline-row"><span>🚄</span> 上午：大同→太原（2.5h）</div>
+                        <div class="timeline-row"><span>🏛️</span> 下午：晋祠（2-3小时）</div>
+                        <div class="timeline-row"><span>🛍️</span> 傍晚：柳巷漫步 + 晚餐</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="timeline-item">
+                <div class="timeline-date">Day 3 · 南京</div>
+                <div class="timeline-card">
+                    <h4 class="timeline-title">🌸 六朝金粉，秦淮风月</h4>
+                    <div class="timeline-content">
+                        <div class="timeline-row"><span>🚄</span> 上午：太原→南京（5h）</div>
+                        <div class="timeline-row"><span>🌸</span> 下午：鸡鸣寺 + 玄武湖</div>
+                        <div class="timeline-row"><span>🌙</span> 晚上：夫子庙赏灯，秦淮河夜游</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="timeline-item">
+                <div class="timeline-date">Day 4 · 南京</div>
+                <div class="timeline-card">
+                    <h4 class="timeline-title">🏛️ 民国风情，历史印记</h4>
+                    <div class="timeline-content">
+                        <div class="timeline-row"><span>🏛️</span> 上午：南京博物院（3-4小时）</div>
+                        <div class="timeline-row"><span>🌳</span> 下午：梧桐大道 + 中山陵</div>
+                        <div class="timeline-row"><span>🛍️</span> 晚上：老门东觅食</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="timeline-item">
+                <div class="timeline-date">Day 5 · 返程</div>
+                <div class="timeline-card">
+                    <h4 class="timeline-title">🧳 满载回忆，踏上归途</h4>
+                    <div class="timeline-content">
+                        <div class="timeline-row"><span>☀️</span> 上午：自由活动，可去总统府</div>
+                        <div class="timeline-row"><span>🚄</span> 下午：南京→大同（6.5h）</div>
+                        <div class="timeline-row"><span>🏠</span> 晚上：抵达大同，结束旅程</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 总结 -->
+    <section class="container">
+        <div class="summary-card">
+            <h3 class="font-cute">💝 这段旅程，你将收获</h3>
+            <p>从北疆古都到江南名城，跨越千年的时空对话<br>石窟的庄严、晋祠的精巧、秦淮的柔情...</p>
+            <div class="summary-stats">
+                <div class="summary-stat">
+                    <div class="summary-stat-number">3</div>
+                    <div class="summary-stat-label">座城市</div>
+                </div>
+                <div class="summary-stat">
+                    <div class="summary-stat-number">12+</div>
+                    <div class="summary-stat-label">个景点</div>
+                </div>
+                <div class="summary-stat">
+                    <div class="summary-stat-number">5</div>
+                    <div class="summary-stat-label">天4晚</div>
+                </div>
+                <div class="summary-stat">
+                    <div class="summary-stat-number">~2800</div>
+                    <div class="summary-stat-label">元预算</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>📌 收藏这份攻略，开启你的大同-太原-南京之旅吧！</p>
+        <p style="margin-top: 0.5rem; font-size: 0.8rem;">Made with ❤️ | 旅行攻略</p>
+    </footer>
+
+    <script>
+        // 滚动动画
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.city-grid, .hotel-grid, .transport-cards, .timeline').forEach(el => {
+            el.classList.add('animate-on-scroll');
+            observer.observe(el);
+        });
+
+        // 卡片点击效果
+        document.querySelectorAll('.spot-card, .hotel-card, .transport-card').forEach(card => {
+            card.addEventListener('click', function() {
+                this.style.transform = 'scale(0.98)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 150);
+            });
+        });
+    </script>
+</body>
+</html>
