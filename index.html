@@ -196,35 +196,60 @@
 
         .schedule-section h2 {
             font-size: 1.3rem;
-            margin-bottom: 1.5rem;
+            margin-bottom: 0.5rem;
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            flex-shrink: 0;
         }
 
-        .stats {
+        .schedule-section .schedule-header {
             display: flex;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
         }
 
-        .stat-card {
-            flex: 1;
-            padding: 1rem;
-            background: linear-gradient(135deg, #F3F4F6, #E5E7EB);
-            border-radius: var(--radius-md);
-            text-align: center;
+        .stats-bar {
+            display: flex;
+            gap: 0.5rem;
         }
 
-        .stat-card .number {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary);
-        }
-
-        .stat-card .label {
-            font-size: 0.875rem;
+        .stat-tab {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
             color: var(--text-gray);
+            background: #f0f0f0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .stat-tab:hover {
+            background: #e0e0e0;
+        }
+
+        .stat-tab.active {
+            background: var(--primary);
+            color: white;
+            font-weight: 500;
+        }
+
+        .stat-num {
+            background: rgba(255,255,255,0.3);
+            border-radius: 10px;
+            padding: 0 0.4rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .stat-tab:not(.active) .stat-num {
+            background: rgba(0,0,0,0.1);
         }
 
         .schedule-list {
@@ -405,10 +430,21 @@
         @media (max-width: 768px) {
             .main-grid {
                 grid-template-columns: 1fr;
+                height: auto;
+                min-height: calc(100vh - 100px);
+            }
+
+            .main-grid > .card {
+                min-height: 400px;
+                height: auto;
             }
 
             .form-row {
                 grid-template-columns: 1fr;
+            }
+
+            .schedule-section .schedule-list {
+                min-height: 300px;
             }
         }
 
@@ -516,25 +552,15 @@
 
             <!-- 日程列表 -->
             <div class="card schedule-section">
-                <h2>📋 日程列表</h2>
-
-                <div class="stats">
-                    <div class="stat-card">
-                        <div class="number" id="totalCount">0</div>
-                        <div class="label">总日程</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="number" id="todayCount">0</div>
-                        <div class="label">今日</div>
+                <div class="schedule-header">
+                    <h2>📋 日程列表</h2>
+                    <div class="stats-bar">
+                        <span class="stat-tab active" id="tabTotal" onclick="showScheduleTab('all')">总日程 <span class="stat-num" id="totalCount">0</span></span>
+                        <span class="stat-tab" id="tabToday" onclick="showScheduleTab('today')">今日 <span class="stat-num" id="todayCount">0</span></span>
                     </div>
                 </div>
 
-                <div id="scheduleList" class="schedule-list">
-                    <div class="empty-state">
-                        <div class="icon">📭</div>
-                        <p>暂无日程，添加一个吧</p>
-                    </div>
-                </div>
+                <div id="scheduleList" class="schedule-list"></div>
             </div>
 
             <!-- 旅行规划侧栏 -->
@@ -827,23 +853,45 @@
             resetForm();
         }
 
+        let currentScheduleTab = 'all';
+
         // ============================================
         // 渲染日程列表
         // ============================================
+        function showScheduleTab(tab) {
+            currentScheduleTab = tab;
+            document.getElementById('tabTotal').classList.toggle('active', tab === 'all');
+            document.getElementById('tabToday').classList.toggle('active', tab === 'today');
+            renderSchedules();
+        }
+
         function renderSchedules() {
             const container = document.getElementById('scheduleList');
+            let filtered = schedules;
 
-            if (schedules.length === 0) {
+            if (currentScheduleTab === 'today') {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                filtered = schedules.filter(s => {
+                    const start = new Date(s.start_time);
+                    return start >= today && start < tomorrow;
+                });
+            }
+
+            if (filtered.length === 0) {
+                const emptyMsg = currentScheduleTab === 'today' ? '今日暂无日程' : '暂无日程，添加一个吧';
                 container.innerHTML = `
                     <div class="empty-state">
                         <div class="icon">📭</div>
-                        <p>暂无日程，添加一个吧</p>
+                        <p>${emptyMsg}</p>
                     </div>
                 `;
                 return;
             }
 
-            container.innerHTML = schedules.map(schedule => {
+            container.innerHTML = filtered.map(schedule => {
                 const start = new Date(schedule.start_time);
                 const end = new Date(schedule.end_time);
                 const color = getColor(schedule.id);

@@ -12,6 +12,21 @@ test.describe('第二栏日程列表', () => {
     await expect(scheduleItems.first()).toBeVisible({ timeout: 10000 });
     await expect.poll(async () => scheduleItems.count(), { timeout: 10000 }).toBeGreaterThan(0);
 
+    // 验证统计栏显示在同行
+    const totalTab = page.locator('#tabTotal');
+    const todayTab = page.locator('#tabToday');
+    await expect(totalTab).toBeVisible();
+    await expect(todayTab).toBeVisible();
+
+    // 点击今日 tab
+    await todayTab.click();
+    await page.waitForTimeout(300);
+    await expect(todayTab).toHaveClass(/active/);
+
+    // 点击总日程 tab
+    await page.locator('#tabTotal').click();
+    await page.waitForTimeout(300);
+
     const firstTitle = (await scheduleItems.first().locator('.schedule-title').textContent())?.trim();
     expect(firstTitle).toBeTruthy();
 
