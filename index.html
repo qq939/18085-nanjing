@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --bg-cream: #FDF8F3;
@@ -564,14 +565,11 @@
     <div id="toast" class="toast"></div>
 
     <script>
-        // API 配置
-        // 如果是从 file:// 协议打开，默认尝试访问 localhost:8082
-        const API_BASE = (window.location.origin === 'null' || window.location.protocol === 'file:') 
-            ? 'http://localhost:8082' 
-            : window.location.origin;
+        // Supabase 配置
+        const SUPABASE_URL = 'https://uacwkmdyekxyqtopdele.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhY3drbWR5ZWt4eXF0b3BkZWxlIiwicmlkIjoiNTc4OTkzNTk3MDM0ODU4NzkzNDgiLCJpYXQiOjE3NDg2ODQ2MDAsImV4cCI6MjA2NDI2MDYwMH0.EU5UJ8x1nNGni4T4wP1Y7Y8hPmY9R5vL6kGJ3xC_p9c';
 
-        console.log('API_BASE set to:', API_BASE);
-
+        let supabase = null;
         let schedules = [];
         let deleteTargetId = null;
 
@@ -590,25 +588,15 @@
 
         // 初始化
         document.addEventListener('DOMContentLoaded', () => {
-            fetchSchedules();
+            initSupabase(SUPABASE_URL, SUPABASE_KEY);
             initForm();
+            initTravelSection();
         });
 
-        // API 请求封装
-        async function apiRequest(method, path, data = null) {
-            const options = {
-                method,
-                headers: { 'Content-Type': 'application/json' }
-            };
-            if (data) {
-                options.body = JSON.stringify(data);
-            }
-            const response = await fetch(API_BASE + path, options);
-            const result = await response.json();
-            if (!response.ok) {
-                throw new Error(result.error || '请求失败');
-            }
-            return result;
+        // 初始化 Supabase
+        function initSupabase(url, key) {
+            supabase = window.supabase.createClient(url, key);
+            fetchSchedules();
         }
 
         // 初始化表单
@@ -617,7 +605,6 @@
             const startTime = document.getElementById('startTime');
             const endTime = document.getElementById('endTime');
 
-            // 设置默认时间（当前时间到一小时后）
             const now = new Date();
             now.setMinutes(0, 0, 0);
             const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
@@ -625,7 +612,6 @@
             startTime.value = formatDateTimeLocal(now);
             endTime.value = formatDateTimeLocal(oneHourLater);
 
-            // 时间变化检测冲突
             startTime.addEventListener('change', checkConflicts);
             endTime.addEventListener('change', checkConflicts);
 
@@ -653,7 +639,7 @@
             const endTime = document.getElementById('endTime').value;
             const editId = document.getElementById('editId').value;
 
-            if (!startTime || !endTime) return;
+            if (!startTime || !endTime || !supabase) return;
 
             const start = parseDateTimeLocal(startTime);
             const end = parseDateTimeLocal(endTime);
@@ -720,7 +706,7 @@
                 return;
             }
 
-            // 检查冲突（前端检查）
+            // 检查冲突
             const conflicts = schedules.filter(s => {
                 if (editId && s.id === editId) return false;
                 const sStart = new Date(s.start_time);
@@ -742,12 +728,17 @@
 
             try {
                 if (editId) {
-                    // 更新
-                    await apiRequest('PUT', `/api/schedules/${editId}`, data);
+                    const { error } = await supabase
+                        .from('schedules')
+                        .update({ ...data, updated_at: new Date().toISOString() })
+                        .eq('id', editId);
+                    if (error) throw error;
                     showToast('日程已更新', 'success');
                 } else {
-                    // 添加
-                    await apiRequest('POST', '/api/schedules', data);
+                    const { error } = await supabase
+                        .from('schedules')
+                        .insert([data]);
+                    if (error) throw error;
                     showToast('日程已添加', 'success');
                 }
 
@@ -783,10 +774,18 @@
 
         // 获取日程列表
         async function fetchSchedules() {
+            if (!supabase) return;
             const container = document.getElementById('scheduleList');
+
             try {
-                const result = await apiRequest('GET', '/api/schedules');
-                schedules = result.data || [];
+                const { data, error } = await supabase
+                    .from('schedules')
+                    .select('*')
+                    .order('start_time', { ascending: true });
+
+                if (error) throw error;
+
+                schedules = data || [];
                 renderSchedules();
                 updateStats();
             } catch (error) {
@@ -903,10 +902,16 @@
 
         // 确认删除
         document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
-            if (!deleteTargetId) return;
+            if (!deleteTargetId || !supabase) return;
 
             try {
-                await apiRequest('DELETE', `/api/schedules/${deleteTargetId}`);
+                const { error } = await supabase
+                    .from('schedules')
+                    .delete()
+                    .eq('id', deleteTargetId);
+
+                if (error) throw error;
+
                 showToast('日程已删除', 'success');
                 closeDeleteModal();
                 fetchSchedules();
@@ -971,7 +976,31 @@
                 document.getElementById('travelFrame').style.display = 'none';
 
                 // 调用 API 触发旅行规划生成
-                const result = await apiRequest('POST', '/api/travel/generate', {
+                const response = await fetch('http://localhost:8082/api/travel/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ schedules: schedules })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    statusEl.style.display = 'none';
+                    document.getElementById('travelFrame').style.display = 'block';
+                    document.getElementById('travelFrame').src = 'sidebar.html?t=' + Date.now();
+                }
+            } catch (error) {
+                console.error('更新旅行规划失败:', error);
+            }
+        }
+
+        // 初始化旅行规划区域
+        document.addEventListener('DOMContentLoaded', () => {
+            initTravelSection();
+        });
+    </script>
+</body>
+</html>('POST', '/api/travel/generate', {
                     schedules: schedules
                 });
 
