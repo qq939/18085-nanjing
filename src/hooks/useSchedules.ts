@@ -41,18 +41,27 @@ export function useSchedules() {
     }
   }, [fetchSchedules])
 
-  const updateSchedule = useCallback(async (id: string, schedule: Partial<Schedule>) => {
+  const updateSchedule = useCallback(async (id: string, data: { title: string; description: string | null; start_time: string; end_time: string }) => {
+    console.log('[updateSchedule] 开始更新, id:', id, 'data:', data)
     try {
       const { error } = await supabase
         .from('schedules')
-        .update({ ...schedule, updated_at: new Date().toISOString() })
+        .update({ 
+          title: data.title, 
+          description: data.description, 
+          start_time: data.start_time, 
+          end_time: data.end_time,
+          updated_at: new Date().toISOString() 
+        })
         .eq('id', id)
       
+      console.log('[updateSchedule] 更新结果, error:', error)
       if (error) throw error
       await fetchSchedules()
       return { success: true }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '更新失败'
+      console.error('[updateSchedule] 更新失败:', message)
       return { success: false, error: message }
     }
   }, [fetchSchedules])

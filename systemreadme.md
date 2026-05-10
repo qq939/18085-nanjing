@@ -358,7 +358,8 @@ npx skills add supabase/agent-skills
 
 加入supabase数据库连接池方法，postgresql://postgres.uacwkmdyekxyqtopdele:Black_supabase00@aws-1-ap-northeast-2.pooler.supabase.com:5432/postgres
 
-
+anno key：supabase
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhY3drbWR5ZWt4eXF0b3BkZWxlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczOTgwNTMsImV4cCI6MjA5Mjk3NDA1M30.bm-LMuDArYuWmoFX8hVV-r3tYs3WgacvqsRcQtwhDe8
 
 ================================================================================
 十四、AI对话助手功能指导

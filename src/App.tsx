@@ -20,22 +20,22 @@ export default function App() {
     setTimeout(() => setToast(null), 3000)
   }
 
-  const handleSubmit = async (data: Omit<Schedule, 'id' | 'created_at' | 'updated_at'>) => {
-    console.log('[App] handleSubmit, editingSchedule:', editingSchedule, 'data:', data)
+  const handleSubmit = async (data: { title: string; description: string | null; start_time: string; end_time: string }) => {
+    console.log('[App] handleSubmit, editingSchedule:', editingSchedule?.id, 'data:', data)
     if (editingSchedule) {
       const result = await updateSchedule(editingSchedule.id, data)
       if (result.success) {
-        showToast('日程已更新')
+        showToast('✅ 日程已更新')
         setEditingSchedule(null)
       } else {
-        showToast(result.error || '更新失败', 'error')
+        showToast('❌ ' + (result.error || '更新失败'), 'error')
       }
     } else {
       const result = await addSchedule(data)
       if (result.success) {
-        showToast('日程已添加')
+        showToast('✅ 日程已添加')
       } else {
-        showToast(result.error || '添加失败', 'error')
+        showToast('❌ ' + (result.error || '添加失败'), 'error')
       }
     }
   }
