@@ -2,9 +2,8 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = 8082;
+const PORT = 8083;
 const CSV_PATH = path.join(__dirname, 'schedules.csv');
-const DIST_PATH = path.join(__dirname, 'dist');
 
 function parseCSV(csv) {
   const lines = csv.trim().split('\n');
@@ -33,25 +32,6 @@ function saveCSV(schedules) {
     lines.push(values.join(','));
   });
   fs.writeFileSync(CSV_PATH, lines.join('\n'));
-}
-
-function serveStaticFile(res, filePath) {
-  const fullPath = path.join(DIST_PATH, filePath);
-  if (fs.existsSync(fullPath) && fs.statSync(fullPath).isFile()) {
-    const ext = path.extname(filePath);
-    const mimeTypes = {
-      '.html': 'text/html',
-      '.js': 'application/javascript',
-      '.css': 'text/css',
-      '.png': 'image/png',
-      '.jpg': 'image/jpeg',
-      '.svg': 'image/svg+xml',
-    };
-    res.writeHead(200, { 'Content-Type': mimeTypes[ext] || 'text/plain' });
-    res.end(fs.readFileSync(fullPath));
-    return true;
-  }
-  return false;
 }
 
 const server = http.createServer((req, res) => {
@@ -102,25 +82,10 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  if (req.url === '/' || req.url === '/index.html') {
-    const indexPath = path.join(DIST_PATH, 'index.html');
-    if (fs.existsSync(indexPath)) {
-      res.writeHead(200, { 'Content-Type': 'text/html' });
-      res.end(fs.readFileSync(indexPath));
-      return;
-    }
-  }
-
-  const staticFile = url.pathname.substring(1);
-  if (serveStaticFile(res, staticFile)) return;
-  if (serveStaticFile(res, 'index.html')) return;
-
-  res.writeHead(404, { 'Content-Type': 'text/plain' });
-  res.end('Not Found');
+  res.writeHead(404, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ error: 'Not Found' }));
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`[${new Date().toISOString()}] 服务已启动 (0.0.0.0:${PORT})`);
-  console.log(`  - API: /api/schedules`);
-  console.log(`  - 静态: ${DIST_PATH}`);
+server.listen(PORT, () => {
+  console.log(`[${new Date().toISOString()}] API 服务器已启动 (${PORT})`);
 });
