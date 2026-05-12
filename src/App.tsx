@@ -8,8 +8,8 @@ import type { Schedule } from './types'
 import './App.css'
 
 export default function App() {
-  const { schedules, loading, error, addSchedule, updateSchedule, deleteSchedule } = useSchedules()
-  const { filtered, activeTab, setActiveTab } = useScheduleFilter(schedules)
+  const { schedules, loading, error: _error, addSchedule, updateSchedule, deleteSchedule } = useSchedules()
+  const { filtered, activeTab: _activeTab, setActiveTab: _setActiveTab } = useScheduleFilter(schedules)
   
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null)
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)

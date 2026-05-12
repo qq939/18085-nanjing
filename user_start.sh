@@ -22,7 +22,7 @@ python3 "$PROJECT_DIR/sync_to_supabase.py" --pull | tee -a "$LOG_FILE"
 
 # 2. 清理旧进程
 log "步骤 2: 清理旧进程..."
-pkill -9 -f "node.*server.js" 2>/dev/null || true
+pkill -9 -f "node.*server.cjs" 2>/dev/null || true
 pkill -9 -f "vite" 2>/dev/null || true
 pkill -9 -f "node.*api_server" 2>/dev/null || true
 pkill -9 -f "python3.*sync_to_supabase" 2>/dev/null || true
@@ -43,7 +43,7 @@ fi
 
 # 4. 启动主服务 (Node.js 单端口：8082 同时提供 API 和静态文件)
 log "步骤 4: 启动 Node.js 服务器 (0.0.0.0:8082)..."
-nohup node "$PROJECT_DIR/server.js" >> "$PROJECT_DIR/logs/run.log" 2>&1 &
+nohup node "$PROJECT_DIR/server.cjs" >> "$PROJECT_DIR/logs/run.log" 2>&1 &
 SERVER_PID=$!
 log "服务器 PID: $SERVER_PID"
 sleep 3
