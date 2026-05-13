@@ -1,18 +1,24 @@
 import { useState } from 'react'
 import { useSchedules } from './hooks/useSchedules'
+import { useArrows } from './hooks/useArrows'
 import { ScheduleForm } from './components/ScheduleForm'
 import { ScheduleList } from './components/ScheduleList'
 import { StatsBar, useScheduleFilter } from './components/StatsBar'
 import { Toast, DeleteModal } from './components/Modal'
-import type { Schedule } from './types'
+import type { ConnectorSide, Schedule } from './types'
 import './App.css'
 
 export default function App() {
   const { schedules, loading, error: _error, addSchedule, updateSchedule, deleteSchedule } = useSchedules()
+  const { arrows, addArrow, removeArrowsForSchedule } = useArrows()
   const { filtered, activeTab: _activeTab, setActiveTab: _setActiveTab } = useScheduleFilter(schedules)
   
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null)
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
+  const [pendingConnector, setPendingConnector] = useState<{
+    scheduleId: string
+    side: ConnectorSide
+  } | null>(null)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -44,11 +50,40 @@ export default function App() {
     if (!deleteTargetId) return
     const result = await deleteSchedule(deleteTargetId)
     if (result.success) {
+      await removeArrowsForSchedule(deleteTargetId)
       showToast('日程已删除')
     } else {
       showToast(result.error || '删除失败', 'error')
     }
     setDeleteTargetId(null)
+  }
+
+  const handleConnectorClick = async (scheduleId: string, side: ConnectorSide) => {
+    if (!pendingConnector) {
+      setPendingConnector({ scheduleId, side })
+      showToast('已选择起点，请点击另一个连接点')
+      return
+    }
+
+    if (pendingConnector.scheduleId === scheduleId && pendingConnector.side === side) {
+      setPendingConnector(null)
+      showToast('已取消连线')
+      return
+    }
+
+    const result = await addArrow(
+      pendingConnector.scheduleId,
+      pendingConnector.side,
+      scheduleId,
+      side,
+    )
+
+    setPendingConnector(null)
+    if (result.success) {
+      showToast('箭头线条已保存')
+    } else {
+      showToast(result.error || '保存箭头失败', 'error')
+    }
   }
 
   if (loading) {
@@ -75,14 +110,17 @@ export default function App() {
           <StatsBar schedules={schedules} />
           <ScheduleList
             schedules={filtered}
+            arrows={arrows}
+            pendingConnector={pendingConnector}
             onEdit={setEditingSchedule}
             onDelete={(id) => setDeleteTargetId(id)}
+            onConnectorClick={handleConnectorClick}
           />
         </section>
 
         <section className="card travel-section">
           <h2>✈️ 旅行规划</h2>
-          <iframe src="sidebar.html" title="旅行规划" />
+          <iframe src="/api/sidebar" title="旅行规划" />
         </section>
       </main>
 

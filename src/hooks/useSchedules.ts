@@ -1,6 +1,31 @@
 import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '../utils/supabase'
 import type { Schedule } from '../types'
+
+const API_PATH = '/api/schedules'
+
+async function saveSchedules(schedules: Schedule[]) {
+  const response = await fetch(API_PATH, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ schedules }),
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: '保存 schedules.csv 失败' }))
+    throw new Error(error.error || '保存 schedules.csv 失败')
+  }
+}
+
+function createSchedule(data: Omit<Schedule, 'id' | 'created_at' | 'updated_at'>): Schedule {
+  const now = new Date().toISOString()
+
+  return {
+    ...data,
+    id: crypto.randomUUID(),
+    created_at: now,
+    updated_at: now,
+  }
+}
 
 export function useSchedules() {
   const [schedules, setSchedules] = useState<Schedule[]>([])
@@ -9,13 +34,13 @@ export function useSchedules() {
 
   const fetchSchedules = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('schedules')
-        .select('*')
-        .order('start_time', { ascending: true })
-      
-      if (error) throw error
-      setSchedules(data || [])
+      const response = await fetch(API_PATH)
+      if (!response.ok) throw new Error('读取 schedules.csv 失败')
+
+      const data = await response.json() as Schedule[]
+      setSchedules(
+        data.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
+      )
       setError(null)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '获取数据失败'
@@ -28,82 +53,46 @@ export function useSchedules() {
 
   const addSchedule = useCallback(async (schedule: Omit<Schedule, 'id' | 'created_at' | 'updated_at'>) => {
     try {
-      const { error } = await supabase
-        .from('schedules')
-        .insert([schedule])
-      
-      if (error) throw error
-      await fetchSchedules()
+      const nextSchedules = [...schedules, createSchedule(schedule)]
+      await saveSchedules(nextSchedules)
+      setSchedules(nextSchedules.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()))
       return { success: true }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '添加失败'
       return { success: false, error: message }
     }
-  }, [fetchSchedules])
+  }, [schedules])
 
   const updateSchedule = useCallback(async (id: string, data: { title: string; description: string | null; start_time: string; end_time: string }) => {
-    console.log('[updateSchedule] 开始更新, id:', id, 'data:', data)
     try {
-      const { error } = await supabase
-        .from('schedules')
-        .update({ 
-          title: data.title, 
-          description: data.description, 
-          start_time: data.start_time, 
-          end_time: data.end_time,
-          updated_at: new Date().toISOString() 
-        })
-        .eq('id', id)
-      
-      console.log('[updateSchedule] 更新结果, error:', error)
-      if (error) throw error
-      await fetchSchedules()
+      const nextSchedules = schedules.map(schedule =>
+        schedule.id === id
+          ? { ...schedule, ...data, updated_at: new Date().toISOString() }
+          : schedule
+      )
+      await saveSchedules(nextSchedules)
+      setSchedules(nextSchedules.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()))
       return { success: true }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '更新失败'
-      console.error('[updateSchedule] 更新失败:', message)
       return { success: false, error: message }
     }
-  }, [fetchSchedules])
+  }, [schedules])
 
   const deleteSchedule = useCallback(async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('schedules')
-        .delete()
-        .eq('id', id)
-      
-      if (error) throw error
-      await fetchSchedules()
+      const nextSchedules = schedules.filter(schedule => schedule.id !== id)
+      await saveSchedules(nextSchedules)
+      setSchedules(nextSchedules)
       return { success: true }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '删除失败'
       return { success: false, error: message }
     }
-  }, [fetchSchedules])
+  }, [schedules])
 
   useEffect(() => {
-    console.log('[useSchedules] 开始连接 Supabase...')
-    
-    const channel = supabase
-      .channel('schedules_changes')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'schedules'
-      }, (payload) => {
-        console.log('[useSchedules] 数据库变更:', payload)
-        fetchSchedules()
-      })
-      .subscribe((status) => {
-        console.log('[useSchedules] 订阅状态:', status)
-      })
-
     fetchSchedules()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
   }, [fetchSchedules])
 
   return {

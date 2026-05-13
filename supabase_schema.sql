@@ -60,3 +60,27 @@ CREATE POLICY "Allow all access" ON schedules
 GRANT ALL ON schedules TO anon;
 GRANT ALL ON schedules TO authenticated;
 GRANT ALL ON schedules TO postgres;
+
+-- 创建事项箭头线条表
+CREATE TABLE IF NOT EXISTS arrows (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    source_schedule_id UUID NOT NULL REFERENCES schedules(id) ON DELETE CASCADE,
+    source_side TEXT NOT NULL CHECK (source_side IN ('left', 'right')),
+    target_schedule_id UUID NOT NULL REFERENCES schedules(id) ON DELETE CASCADE,
+    target_side TEXT NOT NULL CHECK (target_side IN ('left', 'right')),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_arrows_source_schedule_id ON arrows(source_schedule_id);
+CREATE INDEX IF NOT EXISTS idx_arrows_target_schedule_id ON arrows(target_schedule_id);
+
+ALTER TABLE arrows ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow all access" ON arrows;
+CREATE POLICY "Allow all access" ON arrows
+    FOR ALL USING (true) WITH CHECK (true);
+
+GRANT ALL ON arrows TO anon;
+GRANT ALL ON arrows TO authenticated;
+GRANT ALL ON arrows TO postgres;

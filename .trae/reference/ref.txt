@@ -1,0 +1,1 @@
+Supabase PostgreSQL schema and table synchronization are implemented with psycopg2 and local CSV files.

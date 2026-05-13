@@ -1,60 +1,45 @@
-const { test, expect } = require('@playwright/test');
+import { test, expect } from '@playwright/test';
 
 const TARGET_URL = 'http://localhost:8082/';
 
-test.describe('第二栏日程列表 - Supabase 实时同步', () => {
-
-  test('页面加载后应显示来自 Supabase 的日程，并可点击编辑按钮回填表单', async ({ page }) => {
+test.describe('第二栏日程列表 - 本地 CSV 数据源', () => {
+  test('页面加载 schedules.csv，并可编辑首条日程', async ({ page }) => {
     test.setTimeout(60000);
-
-    // 捕获控制台日志
-    const consoleLogs = [];
-    const consoleErrors = [];
-    page.on('console', msg => {
-      if (msg.type() === 'error') {
-        consoleErrors.push(msg.text());
-      } else {
-        consoleLogs.push(msg.text());
-      }
-    });
-
-    // 捕获页面错误
-    const pageErrors = [];
-    page.on('pageerror', err => pageErrors.push(err.message));
 
     await page.goto(TARGET_URL, { waitUntil: 'networkidle', timeout: 30000 });
 
-    // 等待 Supabase SDK 加载
-    await page.waitForFunction(() => typeof window.supabase !== 'undefined', { timeout: 15000 });
-    console.log('✅ Supabase SDK 已加载');
+    const scheduleItems = page.locator('.schedule-item');
+    await expect(scheduleItems.first()).toBeVisible({ timeout: 30000 });
+    await expect(page.locator('.schedule-title').first()).not.toHaveText('');
 
-    // 等待日程列表渲染（最多 30 秒）
-    try {
-      const scheduleItems = page.locator('.schedule-item');
-      await expect(scheduleItems.first()).toBeVisible({ timeout: 30000 });
-      const count = await scheduleItems.count();
-      console.log(`✅ 日程列表已渲染，共 ${count} 条`);
-
-      const firstTitle = (await scheduleItems.first().locator('.schedule-title').textContent())?.trim();
-      console.log(`✅ 第一个日程: ${firstTitle}`);
-
-      // 点击编辑按钮
-      await scheduleItems.first().locator('button:has-text("编辑")').click({ timeout: 10000 });
-      await expect(page.locator('#formTitle')).toHaveText('编辑日程');
-      console.log('✅ 编辑模式已激活');
-    } catch (err) {
-      // 输出调试信息
-      console.log('\n--- 调试信息 ---');
-      console.log('页面错误:', pageErrors);
-      console.log('控制台错误:', consoleErrors);
-      console.log('控制台日志:', consoleLogs.slice(-10));
-
-      // 截图
-      await page.screenshot({ path: '/tmp/debug-screenshot.png', fullPage: true });
-      console.log('截图已保存到 /tmp/debug-screenshot.png');
-
-      throw err;
-    }
+    await scheduleItems.first().locator('button:has-text("编辑")').click({ timeout: 10000 });
+    await expect(page.locator('.schedule-form h2')).toContainText('编辑日程');
   });
 
+  test('点击两个连接点后生成有方向箭头并写入 arrows.csv', async ({ page }) => {
+    test.setTimeout(60000);
+
+    await page.goto(TARGET_URL, { waitUntil: 'networkidle', timeout: 30000 });
+    const originalResponse = await page.request.get('http://localhost:8082/api/arrows');
+    const originalArrows = await originalResponse.json();
+
+    try {
+      const scheduleItems = page.locator('.schedule-item');
+      await expect(scheduleItems.nth(1)).toBeVisible({ timeout: 30000 });
+
+      await scheduleItems.first().locator('.connector-right').click();
+      await scheduleItems.nth(1).locator('.connector-left').click();
+
+      await expect(page.locator('.arrow-path').first()).toBeVisible({ timeout: 10000 });
+
+      const arrowsResponse = await page.request.get('http://localhost:8082/api/arrows');
+      expect(arrowsResponse.ok()).toBeTruthy();
+      const arrows = await arrowsResponse.json();
+      expect(arrows.length).toBe(originalArrows.length + 1);
+      expect(arrows.at(-1).source_side).toBe('right');
+      expect(arrows.at(-1).target_side).toBe('left');
+    } finally {
+      await page.request.post('http://localhost:8082/api/arrows', { data: { arrows: originalArrows } });
+    }
+  });
 });

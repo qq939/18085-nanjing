@@ -2,7 +2,7 @@
 
 ## 项目概述
 
-基于 Hermit-Claw 容器的日程管理 Web App，运行在 **8082 端口**，支持日程增删改查和 AI 旅行规划生成。
+基于 Hermit-Claw 容器的日程管理 Web App，运行在 **8082 端口**，支持日程增删改查、事项箭头连线和 AI 旅行规划生成。
 
 | 属性 | 值 |
 |------|-----|
@@ -21,7 +21,7 @@
 bash user_start.sh
 
 # 手动启动
-node server.js
+bash user_start.sh
 
 # 停止服务
 pkill -f "node.*server.js"
@@ -33,9 +33,11 @@ pkill -f "node.*server.js"
 
 ```
 /home/agent/.claude/workspace/project/
-├── server.js              # Node.js 静态文件服务器 (端口8082)
+├── api_server.js          # 本地 CSV API (端口8083，由 Vite 代理 /api)
 ├── user_start.sh          # 启动脚本（容器启动时自动执行）
-├── index.html             # 日程管理主页（三栏布局）
+├── src/                   # React + TypeScript 前端源码
+├── schedules.csv          # 本地日程数据源
+├── arrows.csv             # 本地箭头线条数据源
 ├── sidebar.html           # 旅行规划（iframe 嵌套）
 ├── supabase_schema.sql    # 数据库表结构
 ├── schedule-list.spec.js  # Playwright 日程列表测试
@@ -59,13 +61,14 @@ pkill -f "node.*server.js"
 
 ### 日程管理 (index.html)
 
-**技术栈**: HTML5 + CSS3 + Vanilla JavaScript（无框架依赖）
+**技术栈**: React + TypeScript + Vite
 
 **核心功能**:
 - ✅ 事项名称、描述管理
 - ✅ 开始/结束时间（datetime-local 选择器）
-- ✅ 时间段冲突检测（实时阻止冲突日程）
-- ✅ localStorage 本地持久化（离线可用）
+- ✅ `schedules.csv` 本地文件作为直接数据源
+- ✅ 左右连接点创建有方向箭头线条
+- ✅ 箭头同时保存到 `arrows.csv` 和 Supabase `arrows` 表
 - ✅ 总日程/今日 tab 切换筛选
 - ✅ 增删改查 + Toast 提示
 
@@ -77,30 +80,30 @@ pkill -f "node.*server.js"
 
 - 由 Claude CLI 根据日程数据自动生成
 - 小红书风格，包含交通、餐饮、景点建议
-- 格式适配第三栏（380px 宽度）
-- 每 30 分钟自动刷新（如有日程变化）
+- 格式适配第三栏（380px 宽度，高度无上限）
+- 每 60 分钟自动刷新（如有日程变化）
 
 **生成逻辑**:
-1. 前端 `setInterval` 每 30 分钟调用 `POST /api/travel/generate`
-2. API 将日程写入 `travel_input.json`
-3. 调用 Claude CLI 生成 `sidebar.html`
-4. 第三栏 iframe 刷新显示
+1. `user_start.sh` 后台启动 `generate_sidebar.py`
+2. 定时任务每小时检查 `schedules.csv` 是否变化
+3. 如有变化，调用 Claude CLI 生成 `sidebar.html`
+4. 第三栏 iframe 通过 `/api/sidebar` 显示最新内容
 
 ---
 
 ## 架构设计原则
 
-### 1. 极简前端架构
+### 1. CSV 优先的数据架构
 
-- **无框架依赖**: 纯 HTML + CSS + Vanilla JS，单文件交付
-- **localStorage 优先**: 日程数据存储在浏览器本地，离线可用，无需后端数据库
-- **Supabase 已移除**: 第二栏不再依赖外部数据库，彻底解决连接问题
+- **本地直接数据源**: 前端只读写本地 API，API 持久化到 `schedules.csv` / `arrows.csv`
+- **Supabase 后台同步**: 启动时先拉取远端数据到 CSV，之后每分钟用 CSV 覆盖同步远端表
+- **双表一致模式**: `arrows` 的存储、拉取、覆盖同步与 `schedules` 完全一致
 
-### 2. 后端仅提供旅行规划
+### 2. Vite + API 分层
 
-- `server.js` 是轻量静态文件服务器
-- 仅在 `/api/travel/generate` 路由调用 Claude CLI 生成旅行规划
-- 其他功能由前端独立完成
+- Vite 在 8082 提供 React + TypeScript 前端
+- `api_server.js` 在 8083 提供 CSV API，Vite 将 `/api` 代理到 8083
+- `user_start.sh` 使用 `nohup` 后台启动 API、Vite、同步任务和 sidebar 生成任务
 
 ### 3. 移动端优先
 
@@ -145,14 +148,17 @@ npx playwright test schedule-list.spec.js
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | GET | `/` | 主页 index.html |
-| GET | `/sidebar.html` | 旅行规划页面 |
-| POST | `/api/travel/generate` | 生成旅行规划 |
+| GET | `/api/schedules` | 读取 schedules.csv |
+| POST | `/api/schedules` | 覆盖写入 schedules.csv |
+| GET | `/api/arrows` | 读取 arrows.csv |
+| POST | `/api/arrows` | 覆盖写入 arrows.csv |
+| GET | `/api/sidebar` | 读取 sidebar.html |
 
 ---
 
 ## 数据结构
 
-### 日程对象 (localStorage)
+### 日程对象 (schedules.csv)
 
 ```javascript
 {
@@ -164,9 +170,19 @@ npx playwright test schedule-list.spec.js
 }
 ```
 
-### 存储键名
+### 箭头对象 (arrows.csv)
 
-- `schedules_data`: 日程数据（JSON 数组）
+```javascript
+{
+  id: string,
+  source_schedule_id: string,
+  source_side: 'left' | 'right',
+  target_schedule_id: string,
+  target_side: 'left' | 'right',
+  created_at: string,
+  updated_at: string
+}
+```
 
 ---
 
