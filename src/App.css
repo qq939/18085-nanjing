@@ -80,7 +80,7 @@ body {
 .travel-section {
   justify-self: end;
   width: 100%;
-  min-height: 600px;
+  min-height: 1200px;
   height: 100%;
   z-index: 1;
   display: flex;
@@ -441,6 +441,6 @@ body {
   }
 
   .travel-section {
-    min-height: 600px;
+    min-height: 1200px;
   }
 }
