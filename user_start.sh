@@ -8,6 +8,7 @@ cd "$PROJECT_DIR"
 
 export PATH="$PROJECT_DIR/.venv/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
 export PYTHONPATH="$PROJECT_DIR/.python-packages:${PYTHONPATH:-}"
+export PYTHONUNBUFFERED=1
 mkdir -p logs
 export npm_config_cache="$PROJECT_DIR/logs/npm-cache"
 export PIP_CACHE_DIR="$PROJECT_DIR/logs/pip-cache"

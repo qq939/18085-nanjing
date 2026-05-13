@@ -1,4 +1,5 @@
 node_modules/
+__pycache__/
 .venv/
 .python-packages/
 dist/
@@ -7,5 +8,6 @@ build/
 *.log
 .env
 logs/
+sessions/
 test-results/
 .sidebar-schedules.sha256

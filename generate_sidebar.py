@@ -23,24 +23,40 @@ OUTPUT_HTML = os.path.join(PROJECT_DIR, "sidebar.html")
 
 # HASH_PATH is used by loop_forever() to refresh when schedules.csv or README rules change.
 HASH_PATH = os.path.join(PROJECT_DIR, ".sidebar-schedules.sha256")
+CLAUDE_TIMEOUT_SECONDS = 300
 
 
 def timestamp():
     return time.strftime("%Y-%m-%d %H:%M:%S")
 
 
-def file_hash(path):
-    if not os.path.exists(path):
-        return ""
-    with open(path, "rb") as handle:
-        return hashlib.sha256(handle.read()).hexdigest()
+def log(message):
+    print(f"[{timestamp()}] {message}", flush=True)
+
+
+def extract_sidebar_rules(readme_text):
+    start = readme_text.find("### 旅行规划 (sidebar.html)")
+    if start == -1:
+        return readme_text
+
+    next_section = readme_text.find("\n---", start)
+    if next_section == -1:
+        next_section = readme_text.find("\n## ", start + 1)
+    if next_section == -1:
+        return readme_text[start:]
+    return readme_text[start:next_section].strip()
+
+
+def is_html_document(text):
+    normalized = text.lstrip().lower()
+    return normalized.startswith("<!doctype html") or normalized.startswith("<html") or "<body" in normalized[:500]
 
 
 def read_generation_rules():
     for readme_path in README_CANDIDATES:
         if os.path.exists(readme_path):
             with open(readme_path, "r", encoding="utf-8") as handle:
-                return os.path.basename(readme_path), handle.read()
+                return os.path.basename(readme_path), extract_sidebar_rules(handle.read())
     return "README", "未找到 README 生成准则，请按 schedules.csv 生成 sidebar.html。"
 
 
@@ -62,25 +78,28 @@ def fallback_html(total, schedules_text):
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>旅行规划</title>
   <style>
-    body {{ margin: 0; padding: 18px; font-family: -apple-system, BlinkMacSystemFont, "Noto Sans SC", sans-serif; background: #fff7f0; color: #2d3436; }}
+    body {{ margin: 0; padding: 18px; font-family: -apple-system, BlinkMacSystemFont, "Noto Sans SC", sans-serif; background: #fff7f0; color: #2d3436; min-height: 1200px; }}
     .note {{ background: #fff; border: 1px solid #ffd6c2; border-radius: 16px; padding: 16px; box-shadow: 0 8px 24px rgba(255, 107, 107, .12); }}
     h1 {{ font-size: 22px; margin: 0 0 10px; color: #ff5b5b; }}
     h2 {{ font-size: 16px; margin: 18px 0 8px; }}
     pre {{ white-space: pre-wrap; font-size: 13px; line-height: 1.6; }}
     ul {{ padding-left: 18px; line-height: 1.8; }}
+    .risk {{ display: inline-block; padding: 2px 8px; border-radius: 999px; background: #ffe8d6; color: #c2410c; font-size: 12px; }}
   </style>
 </head>
 <body>
   <section class="note">
-    <h1>南京行程灵感</h1>
+    <h1>今日交通体检</h1>
     <p>总日程数：{total}</p>
-    <h2>最近日程</h2>
+    <p><span class="risk">备用生成</span> Claude CLI 未返回有效 HTML，以下根据日程数据生成基础交通检查。</p>
+    <h2>行程顺序</h2>
     <pre>{schedules_text}</pre>
-    <h2>小红书式建议</h2>
+    <h2>交通重点</h2>
     <ul>
-      <li>交通：优先把机场、高铁和酒店之间的移动时间留足 30-60 分钟缓冲。</li>
-      <li>餐饮：景点前后安排轻食或咖啡，避免拍摄和步行时过饱。</li>
-      <li>景点：同一区域连续游玩，少折返，多留一点随机发现的时间。</li>
+      <li>机场、火车站、酒店、景区之间必须优先核对交通时间，跨城或航班衔接至少预留 90-120 分钟。</li>
+      <li>同城景点之间少于 30 分钟的间隔按偏紧处理，少于 15 分钟按高风险处理。</li>
+      <li>遇到雨天、晚高峰、景区排队或带行李移动，建议直接打车并额外加 20-30 分钟缓冲。</li>
+      <li>酒店信息需要联网补充；如无法联网，应明确写“信息不足，仅根据日程推断”。</li>
     </ul>
   </section>
 </body>
@@ -89,7 +108,7 @@ def fallback_html(total, schedules_text):
 
 def generate_sidebar(force=False):
     if not os.path.exists(CSV_PATH):
-        print(f"[{timestamp()}] schedules.csv 不存在，跳过")
+        log("schedules.csv 不存在，跳过")
         return False
 
     current_hash = generation_hash()
@@ -99,16 +118,16 @@ def generate_sidebar(force=False):
             previous_hash = handle.read().strip()
 
     if not force and current_hash == previous_hash and os.path.exists(OUTPUT_HTML):
-        print(f"[{timestamp()}] schedules.csv 无变化，跳过 sidebar.html 刷新")
+        log("schedules.csv/README 无变化，跳过 sidebar.html 刷新")
         return True
 
-    print(f"[{timestamp()}] 生成 sidebar.html...")
+    log("生成 sidebar.html...")
     try:
         with open(CSV_PATH, "r", encoding="utf-8", newline="") as handle:
             rows = list(csv.DictReader(handle))
 
         if not rows:
-            print(f"[{timestamp()}] CSV 为空，跳过生成")
+            log("CSV 为空，跳过生成")
             return False
 
         total = len(rows)
@@ -137,17 +156,28 @@ def generate_sidebar(force=False):
 {schedules_list}
 """
 
-        result = subprocess.run(
-            ["claude", "-p", prompt],
-            capture_output=True,
-            text=True,
-            timeout=120,
-            check=False,
-        )
+        try:
+            result = subprocess.run(
+                ["claude", "-p", prompt],
+                capture_output=True,
+                text=True,
+                timeout=CLAUDE_TIMEOUT_SECONDS,
+                check=False,
+            )
+        except subprocess.TimeoutExpired:
+            log(f"Claude CLI 超过 {CLAUDE_TIMEOUT_SECONDS} 秒未返回，写入备用 sidebar.html")
+            result = None
 
-        html = result.stdout.strip()
-        if result.returncode != 0 or not html:
-            print(f"[{timestamp()}] Claude CLI 无有效输出，写入备用 sidebar.html")
+        html = result.stdout.strip() if result else ""
+        if result and result.returncode != 0:
+            log(f"Claude CLI 返回非 0 状态: {result.returncode}")
+            if result.stderr:
+                log(f"Claude CLI stderr: {result.stderr[-1200:]}")
+        if html and not is_html_document(html):
+            log("Claude CLI 返回的不是 HTML，改写入备用 sidebar.html")
+            html = ""
+        if not html:
+            log("Claude CLI 无有效输出，写入备用 sidebar.html")
             html = fallback_html(total, schedules_list)
 
         with open(OUTPUT_HTML, "w", encoding="utf-8") as handle:
@@ -155,10 +185,10 @@ def generate_sidebar(force=False):
         with open(HASH_PATH, "w", encoding="utf-8") as handle:
             handle.write(current_hash)
 
-        print(f"[{timestamp()}] sidebar.html 生成成功 ({total} 条日程)")
+        log(f"sidebar.html 生成成功 ({total} 条日程)")
         return True
     except Exception as error:
-        print(f"[{timestamp()}] 生成失败: {error}")
+        log(f"生成失败: {error}")
         return False
 
 
