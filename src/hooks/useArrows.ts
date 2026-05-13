@@ -85,6 +85,21 @@ export function useArrows() {
     }
   }, [arrows])
 
+  const removeArrow = useCallback(async (arrowId: string) => {
+    const nextArrows = arrows.filter(arrow => arrow.id !== arrowId)
+
+    if (nextArrows.length === arrows.length) return { success: true }
+
+    try {
+      await saveArrows(nextArrows)
+      setArrows(nextArrows)
+      return { success: true }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '删除箭头失败'
+      return { success: false, error: message }
+    }
+  }, [arrows])
+
   useEffect(() => {
     fetchArrows()
   }, [fetchArrows])
@@ -95,6 +110,7 @@ export function useArrows() {
     error,
     fetchArrows,
     addArrow,
+    removeArrow,
     removeArrowsForSchedule,
   }
 }

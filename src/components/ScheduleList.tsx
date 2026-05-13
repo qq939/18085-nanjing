@@ -8,11 +8,14 @@ interface Props {
   onEdit: (schedule: Schedule) => void
   onDelete: (id: string) => void
   onConnectorClick: (scheduleId: string, side: ConnectorSide) => void
+  onArrowDelete: (arrowId: string) => void
 }
 
 interface ArrowPath {
   id: string
   d: string
+  controlX: number
+  controlY: number
 }
 
 function formatDateTime(date: Date) {
@@ -30,10 +33,12 @@ export function ScheduleList({
   onEdit,
   onDelete,
   onConnectorClick,
+  onArrowDelete,
 }: Props) {
   const canvasRef = useRef<HTMLDivElement | null>(null)
   const connectorRefs = useRef<Record<string, HTMLButtonElement | null>>({})
   const [arrowPaths, setArrowPaths] = useState<ArrowPath[]>([])
+  const [selectedArrowId, setSelectedArrowId] = useState<string | null>(null)
   const visibleScheduleIds = new Set(schedules.map(schedule => schedule.id))
 
   useLayoutEffect(() => {
@@ -62,8 +67,10 @@ export function ScheduleList({
           const sourceDirection = arrow.source_side === 'right' ? bend : -bend
           const targetDirection = arrow.target_side === 'right' ? bend : -bend
           const d = `M ${startX} ${startY} C ${startX + sourceDirection} ${startY}, ${endX + targetDirection} ${endY}, ${endX} ${endY}`
+          const controlX = (startX + endX) / 2
+          const controlY = (startY + endY) / 2
 
-          return { id: arrow.id, d }
+          return { id: arrow.id, d, controlX, controlY }
         })
         .filter((path): path is ArrowPath => Boolean(path))
 
@@ -90,17 +97,51 @@ export function ScheduleList({
   }
 
   return (
-    <div className="schedule-canvas" ref={canvasRef}>
-      <svg className="arrow-layer" aria-hidden="true">
+    <div className="schedule-canvas" ref={canvasRef} onClick={() => setSelectedArrowId(null)}>
+      <svg className="arrow-layer" aria-label="事项箭头线条">
         <defs>
           <marker id="arrow-head" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
             <path d="M 0 0 L 10 5 L 0 10 z" />
           </marker>
         </defs>
         {arrowPaths.map(path => (
-          <path key={path.id} className="arrow-path" d={path.d} markerEnd="url(#arrow-head)" />
+          <g key={path.id}>
+            <path
+              className="arrow-hit-path"
+              d={path.d}
+              onClick={(event) => {
+                event.stopPropagation()
+                setSelectedArrowId(path.id)
+              }}
+            />
+            <path
+              className={`arrow-path${selectedArrowId === path.id ? ' selected' : ''}`}
+              d={path.d}
+              markerEnd="url(#arrow-head)"
+            />
+          </g>
         ))}
       </svg>
+
+      {arrowPaths.map(path => (
+        selectedArrowId === path.id && (
+          <button
+            key={`delete-${path.id}`}
+            className="arrow-delete"
+            style={{ left: path.controlX, top: path.controlY }}
+            type="button"
+            title="删除箭头"
+            aria-label="删除箭头线条"
+            onClick={(event) => {
+              event.stopPropagation()
+              onArrowDelete(path.id)
+              setSelectedArrowId(null)
+            }}
+          >
+            ×
+          </button>
+        )
+      ))}
 
       <div className="schedule-list">
         {schedules.map((schedule) => {

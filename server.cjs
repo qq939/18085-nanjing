@@ -3,55 +3,161 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = 8082;
-const CSV_PATH = path.join(__dirname, 'schedules.csv');
-const DIST_PATH = path.join(__dirname, 'dist');
+const PROJECT_DIR = __dirname;
+const DIST_PATH = path.join(PROJECT_DIR, 'dist');
+const SIDEBAR_PATH = path.join(PROJECT_DIR, 'sidebar.html');
+
+const DATASETS = {
+  schedules: {
+    csvPath: path.join(PROJECT_DIR, 'schedules.csv'),
+    headers: ['id', 'title', 'description', 'start_time', 'end_time', 'created_at', 'updated_at'],
+    bodyKey: 'schedules',
+  },
+  arrows: {
+    csvPath: path.join(PROJECT_DIR, 'arrows.csv'),
+    headers: ['id', 'source_schedule_id', 'source_side', 'target_schedule_id', 'target_side', 'created_at', 'updated_at'],
+    bodyKey: 'arrows',
+  },
+};
+
+function stripAppPrefix(pathname) {
+  if (pathname === '/nanjing') return '/';
+  if (pathname.startsWith('/nanjing/')) return pathname.slice('/nanjing'.length);
+  return pathname;
+}
 
 function parseCSV(csv) {
-  const lines = csv.trim().split('\n');
-  if (lines.length < 2) return [];
-  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-  const schedules = [];
-  for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(',');
-    const s = {};
-    headers.forEach((h, idx) => {
-      s[h] = (values[idx] || '').trim().replace(/^"|"$/g, '');
-    });
-    schedules.push(s);
-  }
-  return schedules;
-}
+  const rows = [];
+  let row = [];
+  let field = '';
+  let inQuotes = false;
 
-function saveCSV(schedules) {
-  const headers = ['id', 'title', 'description', 'start_time', 'end_time', 'created_at', 'updated_at'];
-  const lines = [headers.join(',')];
-  schedules.forEach(s => {
-    const values = headers.map(h => {
-      const v = s[h] || '';
-      return '"' + String(v).replace(/"/g, '""') + '"';
+  for (let i = 0; i < csv.length; i += 1) {
+    const char = csv[i];
+    const next = csv[i + 1];
+
+    if (char === '"' && inQuotes && next === '"') {
+      field += '"';
+      i += 1;
+    } else if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      row.push(field);
+      field = '';
+    } else if ((char === '\n' || char === '\r') && !inQuotes) {
+      if (char === '\r' && next === '\n') i += 1;
+      row.push(field);
+      if (row.some(value => value !== '')) rows.push(row);
+      row = [];
+      field = '';
+    } else {
+      field += char;
+    }
+  }
+
+  row.push(field);
+  if (row.some(value => value !== '')) rows.push(row);
+  if (rows.length < 2) return [];
+
+  const headers = rows[0].map(value => value.trim());
+  return rows.slice(1).map(values => {
+    const record = {};
+    headers.forEach((header, index) => {
+      record[header] = values[index] || '';
     });
-    lines.push(values.join(','));
+    return record;
   });
-  fs.writeFileSync(CSV_PATH, lines.join('\n'));
 }
 
-function serveStaticFile(res, filePath) {
-  const fullPath = path.join(DIST_PATH, filePath);
-  if (fs.existsSync(fullPath) && fs.statSync(fullPath).isFile()) {
-    const ext = path.extname(filePath);
-    const mimeTypes = {
-      '.html': 'text/html',
-      '.js': 'application/javascript',
-      '.css': 'text/css',
-      '.png': 'image/png',
-      '.jpg': 'image/jpeg',
-      '.svg': 'image/svg+xml',
-    };
-    res.writeHead(200, { 'Content-Type': mimeTypes[ext] || 'text/plain' });
-    res.end(fs.readFileSync(fullPath));
-    return true;
+function formatCSV(records, headers) {
+  const escapeCell = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
+  const lines = [headers.join(',')];
+
+  records.forEach(record => {
+    lines.push(headers.map(header => escapeCell(record[header])).join(','));
+  });
+
+  return `${lines.join('\n')}\n`;
+}
+
+function ensureCSV(dataset) {
+  if (!fs.existsSync(dataset.csvPath)) {
+    fs.writeFileSync(dataset.csvPath, `${dataset.headers.join(',')}\n`);
   }
-  return false;
+}
+
+function sendJson(res, status, payload) {
+  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(payload));
+}
+
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk;
+      if (body.length > 5_000_000) {
+        reject(new Error('请求体过大'));
+        req.destroy();
+      }
+    });
+    req.on('end', () => resolve(body));
+    req.on('error', reject);
+  });
+}
+
+async function handleDataset(req, res, dataset) {
+  try {
+    ensureCSV(dataset);
+
+    if (req.method === 'GET') {
+      const csv = fs.readFileSync(dataset.csvPath, 'utf8');
+      sendJson(res, 200, parseCSV(csv));
+      return;
+    }
+
+    if (req.method === 'POST') {
+      const body = await readBody(req);
+      const payload = JSON.parse(body || '{}');
+      const records = Array.isArray(payload[dataset.bodyKey]) ? payload[dataset.bodyKey] : [];
+      fs.writeFileSync(dataset.csvPath, formatCSV(records, dataset.headers));
+      sendJson(res, 200, { success: true, count: records.length });
+      return;
+    }
+
+    sendJson(res, 405, { error: 'Method Not Allowed' });
+  } catch (error) {
+    sendJson(res, 500, { error: error.message });
+  }
+}
+
+function serveStaticFile(res, pathname) {
+  const cleanPath = pathname === '/' ? '/index.html' : pathname;
+  const decodedPath = decodeURIComponent(cleanPath);
+  const fullPath = path.normalize(path.join(DIST_PATH, decodedPath));
+
+  if (!fullPath.startsWith(DIST_PATH) || !fs.existsSync(fullPath) || !fs.statSync(fullPath).isFile()) {
+    return false;
+  }
+
+  const ext = path.extname(fullPath);
+  const mimeTypes = {
+    '.html': 'text/html; charset=utf-8',
+    '.js': 'application/javascript; charset=utf-8',
+    '.css': 'text/css; charset=utf-8',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.svg': 'image/svg+xml',
+    '.ico': 'image/x-icon',
+  };
+
+  res.writeHead(200, {
+    'Content-Type': mimeTypes[ext] || 'application/octet-stream',
+    'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=31536000, immutable',
+  });
+  res.end(fs.readFileSync(fullPath));
+  return true;
 }
 
 const server = http.createServer((req, res) => {
@@ -66,61 +172,41 @@ const server = http.createServer((req, res) => {
   }
 
   const url = new URL(req.url, `http://localhost:${PORT}`);
+  const pathname = stripAppPrefix(url.pathname);
 
-  if (url.pathname === '/api/schedules' && req.method === 'GET') {
-    try {
-      if (!fs.existsSync(CSV_PATH)) {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify([]));
-        return;
-      }
-      const csv = fs.readFileSync(CSV_PATH, 'utf8');
-      const schedules = parseCSV(csv);
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(schedules));
-    } catch (e) {
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: e.message }));
-    }
+  if (pathname === '/api/schedules') {
+    handleDataset(req, res, DATASETS.schedules);
     return;
   }
 
-  if (url.pathname === '/api/schedules' && req.method === 'POST') {
-    let body = '';
-    req.on('data', chunk => body += chunk);
-    req.on('end', () => {
-      try {
-        const { schedules } = JSON.parse(body);
-        saveCSV(schedules || []);
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true }));
-      } catch (e) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: e.message }));
-      }
-    });
+  if (pathname === '/api/arrows') {
+    handleDataset(req, res, DATASETS.arrows);
     return;
   }
 
-  if (req.url === '/' || req.url === '/index.html') {
-    const indexPath = path.join(DIST_PATH, 'index.html');
-    if (fs.existsSync(indexPath)) {
-      res.writeHead(200, { 'Content-Type': 'text/html' });
-      res.end(fs.readFileSync(indexPath));
+  if (pathname === '/api/sidebar' && req.method === 'GET') {
+    if (!fs.existsSync(SIDEBAR_PATH)) {
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('sidebar.html not found');
       return;
     }
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
+    res.end(fs.readFileSync(SIDEBAR_PATH));
+    return;
   }
 
-  const staticFile = url.pathname.substring(1);
-  if (serveStaticFile(res, staticFile)) return;
-  if (serveStaticFile(res, 'index.html')) return;
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    sendJson(res, 405, { error: 'Method Not Allowed' });
+    return;
+  }
 
-  res.writeHead(404, { 'Content-Type': 'text/plain' });
-  res.end('Not Found');
+  if (serveStaticFile(res, pathname)) return;
+  serveStaticFile(res, '/index.html');
 });
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`[${new Date().toISOString()}] 服务已启动 (0.0.0.0:${PORT})`);
-  console.log(`  - API: /api/schedules`);
   console.log(`  - 静态: ${DIST_PATH}`);
+  console.log('  - API: /api/schedules, /api/arrows, /api/sidebar');
+  console.log('  - 兼容入口: / 和 /nanjing/');
 });

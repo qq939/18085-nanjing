@@ -11,7 +11,7 @@ import './App.css'
 
 export default function App() {
   const { schedules, loading, error: _error, addSchedule, updateSchedule, deleteSchedule } = useSchedules()
-  const { arrows, addArrow, removeArrowsForSchedule } = useArrows()
+  const { arrows, addArrow, removeArrow, removeArrowsForSchedule } = useArrows()
   const { filtered, activeTab: _activeTab, setActiveTab: _setActiveTab } = useScheduleFilter(schedules)
   
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null)
@@ -87,6 +87,15 @@ export default function App() {
     }
   }
 
+  const handleArrowDelete = async (arrowId: string) => {
+    const result = await removeArrow(arrowId)
+    if (result.success) {
+      showToast('箭头线条已删除')
+    } else {
+      showToast(result.error || '删除箭头失败', 'error')
+    }
+  }
+
   if (loading) {
     return <div className="loading">加载中...</div>
   }
@@ -116,6 +125,7 @@ export default function App() {
             onEdit={setEditingSchedule}
             onDelete={(id) => setDeleteTargetId(id)}
             onConnectorClick={handleConnectorClick}
+            onArrowDelete={handleArrowDelete}
           />
         </section>
 
