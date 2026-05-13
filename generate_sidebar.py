@@ -11,10 +11,17 @@ PROJECT_DIR = os.path.dirname(__file__)
 # CSV_PATH is used by file_hash() and generate_sidebar() as the source of travel data.
 CSV_PATH = os.path.join(PROJECT_DIR, "schedules.csv")
 
+# README_CANDIDATES are passed to Claude so sidebar.html follows the documented generation rules.
+README_CANDIDATES = [
+    os.path.join(PROJECT_DIR, "README.txt"),
+    os.path.join(PROJECT_DIR, "README.md"),
+    os.path.join(PROJECT_DIR, "Readme.md"),
+]
+
 # OUTPUT_HTML is used by generate_sidebar() as the third-column iframe document.
 OUTPUT_HTML = os.path.join(PROJECT_DIR, "sidebar.html")
 
-# HASH_PATH is used by loop_forever() to refresh only when schedules.csv changes.
+# HASH_PATH is used by loop_forever() to refresh when schedules.csv or README rules change.
 HASH_PATH = os.path.join(PROJECT_DIR, ".sidebar-schedules.sha256")
 
 
@@ -27,6 +34,24 @@ def file_hash(path):
         return ""
     with open(path, "rb") as handle:
         return hashlib.sha256(handle.read()).hexdigest()
+
+
+def read_generation_rules():
+    for readme_path in README_CANDIDATES:
+        if os.path.exists(readme_path):
+            with open(readme_path, "r", encoding="utf-8") as handle:
+                return os.path.basename(readme_path), handle.read()
+    return "README", "未找到 README 生成准则，请按 schedules.csv 生成 sidebar.html。"
+
+
+def generation_hash():
+    digest = hashlib.sha256()
+    for path in [CSV_PATH, *README_CANDIDATES]:
+        if os.path.exists(path):
+            digest.update(path.encode("utf-8"))
+            with open(path, "rb") as handle:
+                digest.update(handle.read())
+    return digest.hexdigest()
 
 
 def fallback_html(total, schedules_text):
@@ -67,7 +92,7 @@ def generate_sidebar(force=False):
         print(f"[{timestamp()}] schedules.csv 不存在，跳过")
         return False
 
-    current_hash = file_hash(CSV_PATH)
+    current_hash = generation_hash()
     previous_hash = ""
     if os.path.exists(HASH_PATH):
         with open(HASH_PATH, "r", encoding="utf-8") as handle:
@@ -91,16 +116,22 @@ def generate_sidebar(force=False):
             f"{row.get('title', '')} | {row.get('start_time', '')} - {row.get('end_time', '')}"
             for row in rows[:20]
         )
+        readme_name, readme_text = read_generation_rules()
 
         prompt = f"""请根据以下 schedules.csv 数据自动生成完整 sidebar.html。
 
 硬性要求：
 - 只输出纯 HTML 代码，不要 markdown 标记
+- 必须严格遵守 {readme_name} 中关于 sidebar.html 的生成准则
 - 小红书风格：轻盈、鲜活、有分区标题，适合旅行攻略侧栏
-- 必须包含交通、餐饮、景点建议
+- 必须包含天气、交通、餐饮、景点、酒店、打卡拍摄、女生着装建议
+- 酒店相关内容必须联网搜索补充，信息不足时明确说明“信息不足，仅根据日程推断”
 - 格式适配网页第三栏：宽度约 380px，高度无上限，内容可纵向滚动
 - 显示总日程数：{total}
 - 根据日程地点和时间给出具体建议，不要泛泛而谈
+
+{readme_name} 内容：
+{readme_text}
 
 日程数据：
 {schedules_list}
