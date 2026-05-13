@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { Schedule } from '../types'
+import { apiPath } from '../utils/api'
+import { createId } from '../utils/id'
 
-const API_PATH = '/api/schedules'
+const API_PATH = apiPath('api/schedules')
 
 async function saveSchedules(schedules: Schedule[]) {
   const response = await fetch(API_PATH, {
@@ -21,7 +23,7 @@ function createSchedule(data: Omit<Schedule, 'id' | 'created_at' | 'updated_at'>
 
   return {
     ...data,
-    id: crypto.randomUUID(),
+    id: createId(),
     created_at: now,
     updated_at: now,
   }

@@ -2,12 +2,18 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
+  base: '/nanjing/',
   plugins: [react()],
   server: {
     host: '0.0.0.0',
     port: 8082,
-    allowedHosts: ['dimond.top', 'localhost', '127.0.0.1'],
+    allowedHosts: ['dimond.top', 'hermit.dimond.top', 'localhost', '127.0.0.1'],
     proxy: {
+      '/nanjing/api': {
+        target: 'http://127.0.0.1:8083',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/nanjing/, ''),
+      },
       '/api': {
         target: 'http://127.0.0.1:8083',
         changeOrigin: true,

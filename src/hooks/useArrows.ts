@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Arrow, ConnectorSide } from '../types'
+import { apiPath } from '../utils/api'
+import { createId } from '../utils/id'
 
-const API_PATH = '/api/arrows'
+const API_PATH = apiPath('api/arrows')
 
 async function saveArrows(arrows: Arrow[]) {
   const response = await fetch(API_PATH, {
@@ -47,7 +49,7 @@ export function useArrows() {
     try {
       const now = new Date().toISOString()
       const nextArrow: Arrow = {
-        id: crypto.randomUUID(),
+        id: createId(),
         source_schedule_id: sourceScheduleId,
         source_side: sourceSide,
         target_schedule_id: targetScheduleId,

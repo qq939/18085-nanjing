@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const TARGET_URL = 'http://localhost:8082/';
+const TARGET_URL = 'http://localhost:8082/nanjing/';
 
 test.describe('第二栏日程列表 - 本地 CSV 数据源', () => {
   test('页面加载 schedules.csv，并可编辑首条日程', async ({ page }) => {
@@ -20,7 +20,7 @@ test.describe('第二栏日程列表 - 本地 CSV 数据源', () => {
     test.setTimeout(60000);
 
     await page.goto(TARGET_URL, { waitUntil: 'networkidle', timeout: 30000 });
-    const originalResponse = await page.request.get('http://localhost:8082/api/arrows');
+    const originalResponse = await page.request.get('http://localhost:8082/nanjing/api/arrows');
     const originalArrows = await originalResponse.json();
 
     try {
@@ -32,14 +32,14 @@ test.describe('第二栏日程列表 - 本地 CSV 数据源', () => {
 
       await expect(page.locator('.arrow-path').first()).toBeVisible({ timeout: 10000 });
 
-      const arrowsResponse = await page.request.get('http://localhost:8082/api/arrows');
+      const arrowsResponse = await page.request.get('http://localhost:8082/nanjing/api/arrows');
       expect(arrowsResponse.ok()).toBeTruthy();
       const arrows = await arrowsResponse.json();
       expect(arrows.length).toBe(originalArrows.length + 1);
       expect(arrows.at(-1).source_side).toBe('right');
       expect(arrows.at(-1).target_side).toBe('left');
     } finally {
-      await page.request.post('http://localhost:8082/api/arrows', { data: { arrows: originalArrows } });
+      await page.request.post('http://localhost:8082/nanjing/api/arrows', { data: { arrows: originalArrows } });
     }
   });
 });

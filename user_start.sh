@@ -61,10 +61,10 @@ log "侧边栏生成 PID: $SIDEBAR_PID"
 log "验证服务状态..."
 for i in {1..20}; do
     sleep 1
-    if curl -sf http://localhost:8082/ >/dev/null 2>&1 && curl -sf http://localhost:8082/api/schedules >/dev/null 2>&1; then
+    if curl -sf http://localhost:8082/nanjing/ >/dev/null 2>&1 && curl -sf http://localhost:8082/nanjing/api/schedules >/dev/null 2>&1; then
         log "✓ 系统启动成功"
-        log "  - Web: http://localhost:8082"
-        log "  - API: http://localhost:8082/api/schedules, /api/arrows, /api/sidebar"
+        log "  - Web: http://localhost:8082/nanjing/"
+        log "  - API: http://localhost:8082/nanjing/api/schedules, /nanjing/api/arrows, /nanjing/api/sidebar"
         log "========================================="
         exit 0
     fi

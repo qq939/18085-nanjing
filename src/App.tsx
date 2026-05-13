@@ -5,6 +5,7 @@ import { ScheduleForm } from './components/ScheduleForm'
 import { ScheduleList } from './components/ScheduleList'
 import { StatsBar, useScheduleFilter } from './components/StatsBar'
 import { Toast, DeleteModal } from './components/Modal'
+import { apiPath } from './utils/api'
 import type { ConnectorSide, Schedule } from './types'
 import './App.css'
 
@@ -120,7 +121,7 @@ export default function App() {
 
         <section className="card travel-section">
           <h2>✈️ 旅行规划</h2>
-          <iframe src="/api/sidebar" title="旅行规划" />
+          <iframe src={apiPath('api/sidebar')} title="旅行规划" />
         </section>
       </main>
 
